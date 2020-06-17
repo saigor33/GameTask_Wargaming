@@ -1,21 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityNightPool;
 
 public class ShipMovementLogical : MonoBehaviour
 {
+    [SerializeField] private int _indexPlaneInPoll;
+
+    [Header("Параметры коробля")]
     [SerializeField] private float _speedMoving;
     [SerializeField] private float _speedRotate;
-
-
-    private void FixedUpdate()
-    {
-        if (!Input.anyKey)
-            return;
-
-       // MovementLogical();
-
-    }
 
     private void Update()
     {
@@ -45,8 +39,12 @@ public class ShipMovementLogical : MonoBehaviour
 
     private void CheckLaunchPlan()
     {
-        if (Input.GetKeyDown("LaunchPlane"))
+        if (Input.GetButtonDown("LaunchPlane"))
         {
+            PoolObject plane = PoolManager.Get(_indexPlaneInPoll);
+            plane.transform.position = transform.position;
+            plane.transform.rotation = transform.rotation;
+            plane.GetComponent<PlaneMovementLogical>().Init(transform); //PlaneMovementLogical planeMovementLogical = 
 
         }
     }

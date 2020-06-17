@@ -69,7 +69,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: 611dead4660afca47af537f6ba9d8173, type: 3}
   m_Color: {r: 0.990566, g: 0, b: 0, a: 1}
   m_FlipX: 0
@@ -91,6 +91,8 @@ GameObject:
   m_Component:
   - component: {fileID: 6617351372352031239}
   - component: {fileID: 6617351372352031238}
+  - component: {fileID: 3058996678526848713}
+  - component: {fileID: 3017628063069662442}
   m_Layer: 0
   m_Name: Plane
   m_TagString: Untagged
@@ -163,3 +165,34 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &3058996678526848713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6617351372352031237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7962880ab30c1a48ae323370a29469f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &3017628063069662442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6617351372352031237}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e521d4d2f24c9254eb7def81b4556db1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _radiusDistansShip: 3
+  _radiusDistansPlanes: 1
+  _minSpeed: 2
+  _maxSpeed: 4
+  _maxAngleSpeed: 3
+  _timeFly: 20
+  _countFlyCircles: 2
