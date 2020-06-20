@@ -189,10 +189,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e521d4d2f24c9254eb7def81b4556db1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _radiusDistansShip: 3
+  _radiusDistansShip: 2
   _radiusDistansPlanes: 1
   _minSpeed: 2
-  _maxSpeed: 4
-  _maxAngleSpeed: 3
-  _timeFly: 20
+  _maxSpeed: 5
+  _maxAngleSpeed: 4
+  _timeFly: 10
   _countFlyCircles: 2
+  _timeLive: 15
+  _anglePlaneLanding: 45
+  _disappearanceDistancePlane: 1
+  _log_FinishFly_isFlyLine: 0
+  _log_anglePlaneOnShip: 0
+  _log_angleVerticalShip: 0
+  _log_OnLine: 0

@@ -44,8 +44,11 @@ public class ShipMovementLogical : MonoBehaviour
             PoolObject plane = PoolManager.Get(_indexPlaneInPoll);
             plane.transform.position = transform.position;
             plane.transform.rotation = transform.rotation;
-            plane.GetComponent<PlaneMovementLogical>().Init(transform); //PlaneMovementLogical planeMovementLogical = 
-
+            PlaneMovementLogical  planeMovementLogical = plane.GetComponent<PlaneMovementLogical>();
+            AirTrafficController.AddPlaneInList(planeMovementLogical);
+            planeMovementLogical.Init(transform);
         }
     }
 }
+
+
