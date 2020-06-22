@@ -11,6 +11,10 @@ public class AirTrafficController : MonoBehaviour
 
     [SerializeField] private uint _countFrameСalculatingNextPosition;
 
+    /// <summary>
+    /// Добавить самолёт в список контроля
+    /// </summary>
+    /// <param name="plane"></param>
     public static void AddPlaneInList(PlaneMovementLogical plane)
     {
         CheckCorrectListPlanes();
@@ -21,20 +25,27 @@ public class AirTrafficController : MonoBehaviour
             Debug.LogError($"Project({nameof(AirTrafficController)}, _dictionaryLastFrameUpdateSpeedPlane): объект уже существует в списке. Такого быть не должно... Где-то не почистил ссылку");
     }
 
-    public static void RemovePlaneInList (PlaneMovementLogical plane)
+    /// <summary>
+    /// Удалить самолёт из списока контроля
+    /// </summary>
+    /// <param name="plane"></param>
+    public static void RemovePlaneInList(PlaneMovementLogical plane)
     {
         CheckCorrectListPlanes();
         _listPlanes.Remove(plane);
         if (_dictionaryLastFrameUpdateSpeedPlane.ContainsKey(plane))
-            _dictionaryLastFrameUpdateSpeedPlane.Remove(plane); 
+            _dictionaryLastFrameUpdateSpeedPlane.Remove(plane);
         else
             Debug.LogError($"Project({nameof(AirTrafficController)}, _dictionaryLastFrameUpdateSpeedPlane): объект уже был удалён из списка. Такого быть не должно...");
 
     }
 
-    private static void  CheckCorrectListPlanes()
+    /// <summary>
+    /// Проверка на пустышки в списке
+    /// </summary>
+    private static void CheckCorrectListPlanes()
     {
-        for(int i = _listPlanes.Count-1; i>=0; i--)
+        for (int i = _listPlanes.Count - 1; i >= 0; i--)
         {
             if (_listPlanes[i] == null)
                 _listPlanes.RemoveAt(i);
@@ -52,46 +63,44 @@ public class AirTrafficController : MonoBehaviour
         if (_listPlanes.Count == 0)
             return;
 
-
-        // копируем список т.к. во время 
         List<PlaneMovementLogical> listPlanesCopy = new List<PlaneMovementLogical>();
 
         foreach (var plane in _listPlanes)
         {
             //немного костыльный способ...
-            //если не совпадает номер кадра, в котором считается следующая позиция, то устанавливаем 
-            //нужный номер и в текущем кадре не считаем дистанцию для данного самолёта (не добавляем в список, в котором считаем)
+            //если не совпадает номер кадра, в котором считается следующая позиция самолёта, то устанавливаем 
+            //нужный номер и пропускаем текущую итерацию, т.к. нельзя будет получить корректное значение следующей позиции
             if (plane.CountFrameСalculatingNextPosition != _countFrameСalculatingNextPosition)
                 plane.CountFrameСalculatingNextPosition = _countFrameСalculatingNextPosition;
             else
                 listPlanesCopy.Add(plane);
         }
 
-        //Заполняем иерархии в виде ёлочки (выглядит как настройка слоёв взаимодействия физи в unity)
+        //Заполняем массив иерархии в виде ёлочки (выглядит как настройка слоёв взаимодействия физики в unity)
+        //* * * * Всё что ниже диагонали будет дублироваться, по этому не трубуется для расчёта
+        //* * * 0
+        //* * 0 0 
+        //* 0 0 0
         int countItem = listPlanesCopy.Count;
         float[,] distanseBeetweenAllPlanes = new float[countItem, countItem];
-        for (int i=0; i< countItem; i++ )
+        for (int i = 0; i < countItem; i++)
         {
-            for (int j = countItem-1-i; j >=0 ; j--)
+            for (int j = countItem - 1 - i; j >= 0; j--)
             {
-                float distanseTwoPlane = (float)Math.Round(Vector3.Distance(listPlanesCopy[i].NextPositionAfterNumbersFrames, listPlanesCopy[countItem-1-j].NextPositionAfterNumbersFrames), 1);
+                float distanseTwoPlane = (float)Math.Round(Vector3.Distance(listPlanesCopy[i].NextPositionAfterNumbersFrames, listPlanesCopy[countItem - 1 - j].NextPositionAfterNumbersFrames), 1);
                 distanseBeetweenAllPlanes[i, j] = distanseTwoPlane;
             }
         }
 
-        string str = "";
-        //проходим половину массива
+        //Перебираем список и где дистанция нарушена отправляем на корректировку
         for (int i = 0; i < countItem; i++)
         {
             float distancePlanesFirstPlane = listPlanesCopy[i].GetRadiusDistansPlanes;
 
-            str += "<";
-            for (int j = 0; j< countItem-i; j++)
+            for (int j = 0; j < countItem - i; j++)
             {
                 if (j == countItem - 1 - i)
                     continue; //на побочной диагонали расположены пересечения с самими собой
-                //if (listPlanesCopy[i].GetHashCode() == listPlanesCopy[countItem-1 - i].GetHashCode())
-                //    Debug.Log($"Has = [{i},{j}]");
 
                 float distancePlanesSecondPlane = listPlanesCopy[i].GetRadiusDistansPlanes;
 
@@ -102,11 +111,8 @@ public class AirTrafficController : MonoBehaviour
                     if (maxNeedDistance > distanseBeetweenAllPlanes[i, j])
                         ControlDistancePlanes(listPlanesCopy[i], listPlanesCopy[countItem - 1 - j], maxNeedDistance);
                 }
-                str += $"{distanseBeetweenAllPlanes[i, j]}_";
             }
-            str += "> ";
         }
-       // Debug.Log(str);
     }
 
     private void ControlDistancePlanes(PlaneMovementLogical firstPlane, PlaneMovementLogical secondPlane, float maxNeedDistance)
@@ -118,17 +124,42 @@ public class AirTrafficController : MonoBehaviour
             && (numCurrentFrame - _dictionaryLastFrameUpdateSpeedPlane[secondPlane] < _countFrameСalculatingNextPosition))
             return;
 
-        if (firstPlane.Equals(secondPlane))
-            Debug.Log("Equals()=true");
-
-            // Debug.Log("ControlDistancePlanes()");
-
-            Vector3 nextPosAfterNumberFrame_firstPlane = firstPlane.NextPositionAfterNumbersFrames;
+        Vector3 nextPosAfterNumberFrame_firstPlane = firstPlane.NextPositionAfterNumbersFrames;
         Vector3 nextPosAfterNumberFrame_secondPlane = secondPlane.NextPositionAfterNumbersFrames;
 
         Vector3 vectorMovingFirstPlane = nextPosAfterNumberFrame_firstPlane - firstPlane.transform.position;
         Vector3 vectorMovingSecondPlane = nextPosAfterNumberFrame_secondPlane - secondPlane.transform.position;
+        float cosBeetwenTwoVectors = GetCosinusScalerMultiplication(vectorMovingFirstPlane, vectorMovingSecondPlane);
 
+        float distancePlane = Vector3.Distance(nextPosAfterNumberFrame_firstPlane, nextPosAfterNumberFrame_secondPlane);
+        float differenceDistansPlanes = maxNeedDistance - distancePlane;
+
+        //суммарная скорость на которую нужно изменить скорость самолётов, чтобы компенсировать дистанцию
+        float overallSpeedOfChange = differenceDistansPlanes / _countFrameСalculatingNextPosition;
+        if (cosBeetwenTwoVectors > 0)
+        {
+            //firstPlane впереди
+            //secondPlane позади
+            ChangeSpeedPlanes(firstPlane, secondPlane, overallSpeedOfChange);
+        }
+        else
+        {
+            //secondPlane впереди
+            //firstPlane  позади
+            ChangeSpeedPlanes(secondPlane, firstPlane, overallSpeedOfChange);
+        }
+        _dictionaryLastFrameUpdateSpeedPlane[firstPlane] = Time.frameCount;
+        _dictionaryLastFrameUpdateSpeedPlane[secondPlane] = Time.frameCount;
+    }
+
+    /// <summary>
+    /// Получить значение косинуса между двумя векторами
+    /// </summary>
+    /// <param name="vectorMovingFirstPlane"></param>
+    /// <param name="vectorMovingSecondPlane"></param>
+    /// <returns></returns>
+    private float GetCosinusScalerMultiplication(Vector3 vectorMovingFirstPlane, Vector3 vectorMovingSecondPlane)
+    {
         //скалярное произведени
         float multiplicationScaler = vectorMovingFirstPlane.x * vectorMovingSecondPlane.x +
             vectorMovingFirstPlane.y * vectorMovingSecondPlane.y + vectorMovingFirstPlane.z * vectorMovingSecondPlane.z;
@@ -138,89 +169,35 @@ public class AirTrafficController : MonoBehaviour
 
         float cosBeetwenTwoVectors = multiplicationScaler / (lenghtVectorFirstPlane * lenghtVectorSecondPlane);
 
-        float distancePlane = Vector3.Distance(nextPosAfterNumberFrame_firstPlane, nextPosAfterNumberFrame_secondPlane);
-        float differenceDistansPlanes = maxNeedDistance - distancePlane;
-
-
-        //суммарная скорость на которую нужно изменить скорость самолётов, чтобы компенсировать дистанцию
-        float overallSpeedOfChange = differenceDistansPlanes / _countFrameСalculatingNextPosition;
-
-        //float speedReserveFirtsPlane = firstPlane.GetMaxSpeed - firstPlane.GetCurrentSpeed; //запас увеличения скорости
-        //float speedReserveSecondPlane = secondPlane.GetCurrentSpeed - secondPlane.GetMinSpeed; //запас уменьшения скорости
-
-
-        if (cosBeetwenTwoVectors>0)
-        {
-            //firstPlane впереди
-            //secondPlane позади
-            //float travelDistanceTransfering = Vector3.Distance(firstPlane.transform.position, nextPosAfterNumberFrame_firstPlane);
-            //float currentSpeedPerFrame = travelDistanceTransfering / _countFrameСalculatingNextPosition;
-
-            ////суммарная скорость на которую нужно изменить скорость самолётов, чтобы компенсировать дистанцию
-            //float overallSpeedOfChange = differenceDistansPlanes / _countFrameСalculatingNextPosition;
-
-            //float speedReserveFirtsPlane = firstPlane.GetMaxSpeed - firstPlane.GetCurrentSpeed; //запас увеличения скорости
-            //float speedReserveSecondPlane = secondPlane.GetCurrentSpeed - secondPlane.GetMinSpeed; //запас уменьшения скорости
-
-            //float speedCoefficientReserveFirstPlane;
-            //if (speedReserveFirtsPlane != 0)
-            //    speedCoefficientReserveFirstPlane = (speedReserveFirtsPlane + speedReserveSecondPlane) / speedReserveFirtsPlane;
-            //else
-            //    speedCoefficientReserveFirstPlane = 0;
-
-            //float speedChangeFirstPlane = overallSpeedOfChange * speedCoefficientReserveFirstPlane;
-            //float speedChangeSecondPlane = -overallSpeedOfChange * (1-speedCoefficientReserveFirstPlane); // "-" т.к. замедляем
-
-            //firstPlane.UpdatingSpeedPlaneForWhile(speedChangeFirstPlane, timeBetveansCountFrame, true);
-            //secondPlane.UpdatingSpeedPlaneForWhile(speedChangeSecondPlane, timeBetveansCountFrame, true);
-            Debug.Log($">0 firstPlane={firstPlane.transform.position} secondPlane={secondPlane.transform.position}");
-            ChangeSpeedPlanes(firstPlane, secondPlane, overallSpeedOfChange);
-        }
-        else
-        {
-            Debug.Log($"<0 secondPlane={secondPlane.transform.position} firstPlane={firstPlane.transform.position}");
-            //secondPlane впереди
-            //firstPlane  позади
-            ChangeSpeedPlanes(secondPlane, firstPlane , overallSpeedOfChange);
-
-            //коэффициент запаса скорости у первого самолёта. На основе его будет будет добавлена скорость или вычтена
-            //Значение от 0 до 1
-
-            //float speedCoefficientReserveSecondPlane;
-            //if (speedReserveFirtsPlane != 0)
-            //    speedCoefficientReserveSecondPlane = (speedReserveFirtsPlane + speedReserveSecondPlane) / speedReserveFirtsPlane;
-            //else
-            //    speedCoefficientReserveSecondPlane = 0;
-
-            //float speedChangeSecondPlane = overallSpeedOfChange * speedCoefficientReserveSecondPlane;
-            //float speedChangeFirstPlane = -overallSpeedOfChange * (1 - speedCoefficientReserveSecondPlane);
-
-            //secondPlane.UpdatingSpeedPlaneForWhile(speedChangeSecondPlane, timeBetveansCountFrame, true);
-            //firstPlane.UpdatingSpeedPlaneForWhile(speedChangeFirstPlane, timeBetveansCountFrame, true);
-        }
-        _dictionaryLastFrameUpdateSpeedPlane[firstPlane] = Time.frameCount;
-        _dictionaryLastFrameUpdateSpeedPlane[secondPlane] = Time.frameCount;
-
+        return cosBeetwenTwoVectors;
     }
 
+    /// <summary>
+    /// Изменяем значение скоростей самолётов, чтобы они смогли выравнить растояние между друг другом
+    /// </summary>
+    /// <param name="increaseSpeedPlane"></param>
+    /// <param name="reduceSpeedPlane"></param>
+    /// <param name="overallSpeedOfChange"></param>
     private void ChangeSpeedPlanes(PlaneMovementLogical increaseSpeedPlane, PlaneMovementLogical reduceSpeedPlane, float overallSpeedOfChange)
     {
-        float speedReserveIncreaseSpeedPlane = increaseSpeedPlane.GetMaxSpeed - increaseSpeedPlane.GetCurrentSpeed; //запас увеличения скорости
-        float speedReserveReduceSpeedPlane = reduceSpeedPlane.GetCurrentSpeed - reduceSpeedPlane.GetMinSpeed; //запас уменьшения скорости
+        //TO DO: немного костыльно т.к. учитывается в данный момент только два самолёта, а их может быть несколько. 
+        //т.е. один будет перебивать другого
 
+        float speedReserveIncreaseSpeedPlane = increaseSpeedPlane.GetMaxSpeed - increaseSpeedPlane.CurrentSpeed; //запас увеличения скорости
+        float speedReserveReduceSpeedPlane = reduceSpeedPlane.CurrentSpeed - reduceSpeedPlane.GetMinSpeed; //запас уменьшения скорости
 
         //коэффициент запаса скорости у первого самолёта. На основе его будет будет добавлена скорость или вычтена
         //Значение от 0 до 1
         float speedCoefficientReserveFirstPlane;
         if (speedReserveIncreaseSpeedPlane != 0)
-            speedCoefficientReserveFirstPlane = speedReserveIncreaseSpeedPlane/(speedReserveIncreaseSpeedPlane + speedReserveReduceSpeedPlane);
+            speedCoefficientReserveFirstPlane = speedReserveIncreaseSpeedPlane / (speedReserveIncreaseSpeedPlane + speedReserveReduceSpeedPlane);
         else
             speedCoefficientReserveFirstPlane = 0;
 
         float speedChangeIncreaseSpeedPlane = overallSpeedOfChange * speedCoefficientReserveFirstPlane;
         float speedChangeReduceSpeedPlane = -overallSpeedOfChange * (1 - speedCoefficientReserveFirstPlane); // "-" т.к. замедляем
 
-        float timeBetveansCountFrame = Time.time/Time.frameCount  * _countFrameСalculatingNextPosition;
+        float timeBetveansCountFrame = Time.time / Time.frameCount * _countFrameСalculatingNextPosition;
         increaseSpeedPlane.UpdatingSpeedPlaneForWhile(speedChangeIncreaseSpeedPlane, timeBetveansCountFrame, true);
         reduceSpeedPlane.UpdatingSpeedPlaneForWhile(speedChangeReduceSpeedPlane, timeBetveansCountFrame, true);
     }

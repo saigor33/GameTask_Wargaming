@@ -98,7 +98,7 @@ MonoBehaviour:
   _indexPlaneInPoll: 0
   _speedMoving: 2
   _speedRotate: 40
-  _cooldownLaunchPlane: 0
+  _cooldownLaunchPlane: 5
   _maxPlaneInAir: 5
 --- !u!1 &5352894239910000023
 GameObject:

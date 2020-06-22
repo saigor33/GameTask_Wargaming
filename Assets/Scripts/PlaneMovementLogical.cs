@@ -9,6 +9,7 @@ public class PlaneMovementLogical : MonoBehaviour
 {
     public enum StatePlane { BeginFly, Fly, FinishFly }
 
+    [Header("Параметры самолёта")]
     [SerializeField] private float _radiusDistansShip;
     [SerializeField] private float _radiusDistansPlanes;
     [SerializeField] private float _minSpeed;
@@ -24,10 +25,10 @@ public class PlaneMovementLogical : MonoBehaviour
 
     private PoolObject _pool;
     private Transform _transformShip;
+    private Coroutine _coroutineResetSpeed;
     private float _timeStartFinishedFly;
     private float _currentSpeed;
     private float _currentNormalSpeed;
-    private Coroutine _coroutineResetSpeed;
 
     private StatePlane CurrentStatePlane { get; set; }
     public UnityEvent EventAfterFinishFly { get; } = new UnityEvent();
@@ -38,18 +39,32 @@ public class PlaneMovementLogical : MonoBehaviour
     public Vector3 NextPositionAfterNumbersFrames { get; private set; }
 
     /// <summary>
-    /// Номер кадра, для которого расчитывается NextPositionAfterNumbersFrames
+    /// Номер следующего кадра, для которого расчитывается NextPositionAfterNumbersFrames
     /// </summary>
     public uint CountFrameСalculatingNextPosition { get; set; } = 1;
 
     /// <summary>
-    /// Получить радиус дистанции на которой самолёт должен держаться от других самолётов
+    /// Получить радиус дистанции, на которой самолёт должен держаться от других самолётов
     /// </summary>
     public float GetRadiusDistansPlanes { get { return _radiusDistansPlanes; } }
 
-    public float GetCurrentSpeed { get { return _currentSpeed; } }
+    /// <summary>
+    /// Получить текущую скорость объекта
+    /// </summary>
+    public float CurrentSpeed 
+    { 
+        get { return _currentSpeed; } 
+        private set { _currentSpeed = CorrectSpeedLine(value); }
+    }
 
+    /// <summary>
+    /// Получить максимальную скорость объекта
+    /// </summary>
     public float GetMaxSpeed { get { return _maxSpeed; } }
+
+    /// <summary>
+    /// Получить минимимальную скорость объекта
+    /// </summary>
     public float GetMinSpeed { get { return _minSpeed; } }
 
     private void Awake()
@@ -63,23 +78,32 @@ public class PlaneMovementLogical : MonoBehaviour
 
     void Update()
     {
+        MovingPlane();
+    }
+
+    public void Init(Transform transformShip)
+    {
+        _transformShip = transformShip;
+        CurrentStatePlane = StatePlane.BeginFly;
+
+        CurrentSpeed = (_maxSpeed + _minSpeed) / 2f;
+        _currentNormalSpeed = CurrentSpeed;
+        StartCoroutine(FinishFlyAfterTime(_timeFly));
+    }
+
+
+    private void MovingPlane()
+    {
         switch (CurrentStatePlane)
         {
             case StatePlane.BeginFly:
                 {
-                    FlyPlaneLine(_currentSpeed, Vector3.up, Space.Self, false);
-                    if (Vector3.Distance(_transformShip.position, transform.position) >= _radiusDistansShip)
-                    {
-                        _currentSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, _timeFly);
-                        _currentNormalSpeed = _currentSpeed;
-                        CurrentStatePlane = StatePlane.Fly;
-                    }
+                    BeginFly();
                     break;
                 }
             case StatePlane.Fly:
                 {
-                    //Debug.Log($"crnt={transform.position} NextPosCircle= {GetNextPos(_transformShip.position, _currentSpeed, Vector3.forward)}");
-                    FlyPlaneCircle(_transformShip.position, _currentSpeed, Vector3.forward);
+                    FlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
                     break;
                 }
             case StatePlane.FinishFly:
@@ -90,16 +114,32 @@ public class PlaneMovementLogical : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Стадия начала полёта. Самолёт летит до назначенной дистанции от коробля
+    /// </summary>
+    private void BeginFly()
+    {
+        FlyPlaneLine(CurrentSpeed, Vector3.up, Space.Self, false);
+        if (Vector3.Distance(_transformShip.position, transform.position) >= _radiusDistansShip)
+        {
+            CurrentSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, _timeFly);
+            _currentNormalSpeed = CurrentSpeed;
+            CurrentStatePlane = StatePlane.Fly;
+        }
+    }
+
+    /// <summary>
+    /// Стадия завершения полёта. Самолёт ищет короткий путь на окружности к задней части коробля. 
+    /// При поподании нахождение в секторе посадке начинает двигаться к центру.
+    /// </summary>
     private void FlyReturnOnShip()
     {
         Vector3 movementDirection = _transformShip.position - transform.position;
         float angleBeetweenPlaneAndShip = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position);
         float angleRotatePlaneOnShip = GetVerticalAngleShipRotate();
-        //Debug.Log($"angle= {angleBeetweenPlaneAndShip} angleBeetweenPlaneAndShip={angleRotatePlaneOnShip}");
 
         if (angleBeetweenPlaneAndShip == angleRotatePlaneOnShip)
         {
-
             //проверяем находится ли корабль между текущем положением и положением в следующем кадре.
             //Если да, то считаем, что самолёт вернулся на корабль
             Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
@@ -154,103 +194,8 @@ public class PlaneMovementLogical : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Получить скорость полёта по окружности
-    /// </summary>
-    /// <param name="countCircle"></param>
-    /// <param name="radiusCircle"></param>
-    /// <param name="timeOnAllCircle"></param>
-    /// <returns></returns>
-    private float GetSpeedForCircle(float countCircle, float radiusCircle, float timeOnAllCircle)
-    {
-        float speedAngle = countCircle * 2 * Mathf.PI * radiusCircle / timeOnAllCircle;
-        speedAngle = CorrectSpeedAngle(speedAngle);
-        float speedLinear = CorrectSpeedLine(speedAngle * _radiusDistansShip);
 
-        return speedLinear;
-    }
-
-    public void СourseAdjustments(List<Vector3> listPoints)
-    {
-        //найдём минимальные и максимальные точки X и Y
-        //с помощью них определим центр прямоугольника, который является центром описанной окружности
-        // данного прямоугольника. С помощью этой окружности зададим облёта препятсвия
-
-
-        string str = "Points: ";
-        Vector3 pointLeft, pointRight, pointTop, pointBottom;
-
-        float minX = listPoints[0].x;
-        float maxX = listPoints[0].x;
-        float maxY = listPoints[0].y;
-        float minY = listPoints[0].y;
-
-        foreach (var point in listPoints)
-        {
-            if (minX > point.x)
-            {
-                minX = point.x;
-                pointLeft = point;
-            }
-
-            if (maxX < point.x)
-            {
-                maxX = point.x;
-                pointRight = point;
-            }
-
-            if (maxY < point.y)
-            {
-                maxY = point.x;
-                pointTop = point;
-            }
-
-            if (minY > point.y)
-            {
-                minY = point.x;
-                pointBottom = point;
-            }
-            str += $"${point}$ ";
-        }
-
-        //точка вершины прямоугольника, которая также нахдится на окружности
-        Vector3 pointRectTopLeft = new Vector3(minX, maxY, 0);
-        Vector3 centerCircle = new Vector3((minX + maxX) / 2f, (minY + maxY) / 2f, 0);
-        float radiusCircle = Vector3.Distance(pointRectTopLeft, centerCircle);
-
-        float speedAngle = _countFlyCircles * 2 * Mathf.PI * radiusCircle / _timeFly;
-        if (speedAngle > _maxAngleSpeed)
-            speedAngle = _maxAngleSpeed;
-
-        //float speedLinear = speedAngle * distansePlaneAndShip / 2f;
-        float speedLinear = CorrectSpeedLine(speedAngle * radiusCircle);
-        FlyPlaneCircle(centerCircle, speedLinear, Vector3.forward);
-    }
-
-    public float CorrectSpeedLine(float speedLinear)
-    {
-        if (speedLinear > _maxSpeed)
-            speedLinear = _maxSpeed;
-
-        if (speedLinear < _minSpeed)
-            speedLinear = _minSpeed;
-
-        return speedLinear;
-    }
-
-    /// <summary>
-    /// Корректировка значения угловой скорости по допустимому пределу
-    /// </summary>
-    /// <param name="speedAngle"></param>
-    /// <returns></returns>
-    private float CorrectSpeedAngle(float speedAngle)
-    {
-        if (speedAngle > _maxAngleSpeed)
-            speedAngle = _maxAngleSpeed;
-
-        return speedAngle;
-    }
-
+    #region FlyCircle
     /// <summary>
     /// Перемещение объекта по кругу
     /// </summary>
@@ -290,9 +235,35 @@ public class PlaneMovementLogical : MonoBehaviour
         return new Vector3(posX, posY, 0);
     }
 
+    /// <summary>
+    /// Получить скорость полёта по окружности
+    /// </summary>
+    /// <param name="countCircle"></param>
+    /// <param name="radiusCircle"></param>
+    /// <param name="timeOnAllCircle"></param>
+    /// <returns></returns>
+    private float GetSpeedForCircle(float countCircle, float radiusCircle, float timeOnAllCircle)
+    {
+        float speedAngle = countCircle * 2 * Mathf.PI * radiusCircle / timeOnAllCircle;
+        speedAngle = CorrectSpeedAngle(speedAngle);
+        float speedLinear = CorrectSpeedLine(speedAngle * _radiusDistansShip);
+
+        return speedLinear;
+    }
+
+    #endregion
+
+    #region FlyLine
+    /// <summary>
+    /// Переместить объект по прямой
+    /// </summary>
+    /// <param name="speed"></param>
+    /// <param name="direction"></param>
+    /// <param name="coordinateSpace"></param>
+    /// <param name="needCorrectRotate"></param>
     private void FlyPlaneLine(float speed, Vector3 direction, Space coordinateSpace = Space.Self, bool needCorrectRotate = true)
     {
-        if(needCorrectRotate)
+        if (needCorrectRotate)
         {
             Vector3 nextPos = GetNextPosFlyPlaneLine(speed, direction);
             RotatePlaneToNextPoint(nextPos);
@@ -301,101 +272,80 @@ public class PlaneMovementLogical : MonoBehaviour
         transform.Translate(direction.normalized * speed * Time.deltaTime, coordinateSpace);
     }
 
-
-    private Vector3 GetNextPosFlyPlaneLine(float speed, Vector3 direction, uint countFrame=1)
+    /// <summary>
+    /// Получить следующую позицию перемещения объекта
+    /// </summary>
+    /// <param name="speed"></param>
+    /// <param name="direction"></param>
+    /// <param name="countFrame"></param>
+    /// <returns></returns>
+    private Vector3 GetNextPosFlyPlaneLine(float speed, Vector3 direction, uint countFrame = 1)
     {
         Vector3 nextPos = transform.position;
-        for (uint i=0; i< countFrame; i++)
+        for (uint i = 0; i < countFrame; i++)
         {
             nextPos = nextPos + direction.normalized * speed * Time.deltaTime;
         }
         return nextPos;
     }
+    #endregion
 
-    private void RotatePlaneToNextPoint(Vector3 nextPoint)
+    /// <summary>
+    /// Скорректировать скорость самолёта на основе параметро максимального и минимального значения линейной скорости
+    /// </summary>
+    /// <param name="speedLinear"></param>
+    /// <returns></returns>
+    public float CorrectSpeedLine(float speedLinear)
     {
-        float angleBeetweenNextPoint = GetAngleBeetweenTwoPoints(transform.position, nextPoint);
-        transform.eulerAngles = new Vector3(0, 0, angleBeetweenNextPoint);
-    }
+        if (speedLinear > _maxSpeed)
+            speedLinear = _maxSpeed;
 
+        if (speedLinear < _minSpeed)
+            speedLinear = _minSpeed;
 
-    public void Init(Transform transformShip)
-    {
-        _transformShip = transformShip;
-        CurrentStatePlane = StatePlane.BeginFly;
-
-        _currentSpeed = (_maxSpeed + _minSpeed) / 2f;
-        _currentNormalSpeed = _currentSpeed;
-        StartCoroutine(FinishFlyAfterTime(_timeFly));
-    }
-
-    private IEnumerator FinishFlyAfterTime(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        Debug.Log("Start FinishFlyAfterTime()");
-        CurrentStatePlane = StatePlane.FinishFly;
-
-        _timeStartFinishedFly = Time.time;
-    }
-
-    private void FinishFly()
-    {
-        AirTrafficController.RemovePlaneInList(this);
-        EventAfterFinishFly?.Invoke();
-        EventAfterFinishFly.RemoveAllListeners();
-        _pool.Return();
+        return speedLinear;
     }
 
     /// <summary>
-    /// Проверка нахождения точки между двумя другими точками
+    /// Корректировка значения угловой скорости по допустимому пределу
     /// </summary>
-    /// <param name="firstPont"></param>
-    /// <param name="secondPoint"></param>
-    /// <param name="checkPoint"></param>
+    /// <param name="speedAngle"></param>
     /// <returns></returns>
-    private bool CheckPointBetweenTwoPoints(Vector3 firstPont, Vector3 secondPoint, Vector3 checkPoint)
+    private float CorrectSpeedAngle(float speedAngle)
     {
-        Vector3 vectorPosFirstAndCurrent = new Vector3(firstPont.x - checkPoint.x, firstPont.y - checkPoint.y, firstPont.z - checkPoint.z);
-        Vector3 vectorPosCurrentAndSecond = new Vector3(secondPoint.x - checkPoint.x, secondPoint.y - checkPoint.y, secondPoint.z - checkPoint.z);
-        float angle = Vector3.Angle(vectorPosFirstAndCurrent, vectorPosCurrentAndSecond);
+        if (speedAngle > _maxAngleSpeed)
+            speedAngle = _maxAngleSpeed;
 
-        if (angle == 180)
-            return true;
-        else
-            return false;
+        return speedAngle;
     }
 
+    /// <summary>
+    /// Изменить скорость объекта на ввремя
+    /// </summary>
+    /// <param name="speed"></param>
+    /// <param name="time"></param>
+    /// <param name="needAddSpeed"></param>
     public void UpdatingSpeedPlaneForWhile(float speed, float time, bool needAddSpeed)
     {
         if (_coroutineResetSpeed != null)
             StopCoroutine(_coroutineResetSpeed);
         _coroutineResetSpeed = null;
-        _currentSpeed =CorrectSpeedLine(needAddSpeed ? _currentSpeed + speed : speed);
+        CurrentSpeed = needAddSpeed ? _currentSpeed + speed : speed;
 
         _coroutineResetSpeed = StartCoroutine(ResetSpeedToNormal(time));
     }
 
+    /// <summary>
+    /// Сбросить скорость до значения, которое должно быть в текущем состояния 
+    /// </summary>
+    /// <param name="delay"></param>
+    /// <returns></returns>
     private IEnumerator ResetSpeedToNormal(float delay)
     {
-        //Debug.Log($"StartCoroutine = {delay}");
         yield return new WaitForSeconds(delay);
         _currentSpeed = _currentNormalSpeed;
     }
 
-    /// <summary>
-    /// Округление значений типа Vector3 до символов после запятой
-    /// </summary>
-    /// <param name="position"></param>
-    /// <param name="decimals"></param>
-    /// <returns></returns>
-    private Vector3 MathfRound(Vector3 position, int decimals = 0)
-    {
-        float x = (float)Math.Round(position.x, decimals);
-        float y = (float)Math.Round(position.y, decimals);
-        float z = (float)Math.Round(position.z, decimals);
-
-        return new Vector3(x, y, z);
-    }
 
     /// <summary>
     /// Получить угол между двумя точками в диапозоне от 0 до 360.
@@ -434,5 +384,56 @@ public class PlaneMovementLogical : MonoBehaviour
             verticalAngleShipRotate -= 360;
 
         return verticalAngleShipRotate;
+    }
+
+
+    /// <summary>
+    /// Заверешние полёта. Объект вернулся в исходной положение. Происходит отписка от событий и удаления.
+    /// </summary>
+    private void FinishFly()
+    {
+        AirTrafficController.RemovePlaneInList(this);
+        EventAfterFinishFly?.Invoke();
+        EventAfterFinishFly.RemoveAllListeners();
+        _pool.Return();
+    }
+
+    /// <summary>
+    /// Завершение полёта через назначенное время (Переход в режим FinishFly)
+    /// </summary>
+    /// <param name="delay"></param>
+    /// <returns></returns>
+    private IEnumerator FinishFlyAfterTime(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        CurrentStatePlane = StatePlane.FinishFly;
+        _timeStartFinishedFly = Time.time;
+    }
+
+    /// <summary>
+    /// Повернуть объект в сторону точки
+    /// </summary>
+    /// <param name="nextPoint"></param>
+    private void RotatePlaneToNextPoint(Vector3 nextPoint)
+    {
+        float angleBeetweenNextPoint = GetAngleBeetweenTwoPoints(transform.position, nextPoint);
+        transform.eulerAngles = new Vector3(0, 0, angleBeetweenNextPoint);
+    }
+
+
+    /// <summary>
+    /// Проверка нахождения точки между двумя другими точками
+    /// </summary>
+    /// <param name="firstPont"></param>
+    /// <param name="secondPoint"></param>
+    /// <param name="checkPoint"></param>
+    /// <returns></returns>
+    private bool CheckPointBetweenTwoPoints(Vector3 firstPont, Vector3 secondPoint, Vector3 checkPoint)
+    {
+        Vector3 vectorPosFirstAndCurrent = new Vector3(firstPont.x - checkPoint.x, firstPont.y - checkPoint.y, firstPont.z - checkPoint.z);
+        Vector3 vectorPosCurrentAndSecond = new Vector3(secondPoint.x - checkPoint.x, secondPoint.y - checkPoint.y, secondPoint.z - checkPoint.z);
+        float angle = Vector3.Angle(vectorPosFirstAndCurrent, vectorPosCurrentAndSecond);
+
+        return (angle == 180) ? true : false;
     }
 }

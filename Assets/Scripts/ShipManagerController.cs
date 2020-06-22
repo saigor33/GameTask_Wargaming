@@ -74,6 +74,10 @@ public class ShipManagerController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Событие, которое необходимо подписать на момент "уничтожения" самолёта.
+    /// Освобождает ячейку свободного самолёта
+    /// </summary>
     private void PlaneFinishFly()
     {
         _currentPlaneInAir--;
