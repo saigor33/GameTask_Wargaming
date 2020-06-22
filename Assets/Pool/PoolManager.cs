@@ -15,12 +15,15 @@ namespace UnityNightPool
         {
 			Init ();
 			var p = _pools.Find (x => x.GetId == key);
-			if (p != null)
-				return p.Get();
-
-			return null;
+            return (p != null) ? p.Get() : null;
 		}
 
+        public static bool CheckHaveIndexPrefab(int key)
+        {
+            Init();
+            var p = _pools.Find(x => x.GetId == key);
+            return (p != null) ? true : false;
+        }
 
         private static void Init() 
         {
