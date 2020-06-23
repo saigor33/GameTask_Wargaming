@@ -266,7 +266,12 @@ PrefabInstance:
     - target: {fileID: -1163880825511015003, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}
       propertyPath: _cooldownLaunchPlane
-      value: 5
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1163880825511015003, guid: 0331ad22bd1d1fe48943867fb351be36,
+        type: 3}
+      propertyPath: _maxPlaneInAir
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 5352894239669070073, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}

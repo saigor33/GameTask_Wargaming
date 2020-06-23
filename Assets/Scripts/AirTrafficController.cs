@@ -119,9 +119,10 @@ public class AirTrafficController : MonoBehaviour
     {
         //Проверяем когда последний раз, для данного самолёта обновлялся кадр. Если меньше чем число предсказания, 
         // то пропускаем итераци.
+        //+1 сделано для того, чтобы скорость не успела сброситься в PlaneMovementLogical. Тем самым сохранялась плавность
         int numCurrentFrame = Time.frameCount;
-        if ((numCurrentFrame - _dictionaryLastFrameUpdateSpeedPlane[firstPlane] < _countFrameСalculatingNextPosition)
-            && (numCurrentFrame - _dictionaryLastFrameUpdateSpeedPlane[secondPlane] < _countFrameСalculatingNextPosition))
+        if ((numCurrentFrame - _dictionaryLastFrameUpdateSpeedPlane[firstPlane]+1 < _countFrameСalculatingNextPosition)
+            && (numCurrentFrame - _dictionaryLastFrameUpdateSpeedPlane[secondPlane]+1 < _countFrameСalculatingNextPosition))
             return;
 
         Vector3 nextPosAfterNumberFrame_firstPlane = firstPlane.NextPositionAfterNumbersFrames;
@@ -196,6 +197,9 @@ public class AirTrafficController : MonoBehaviour
 
         float speedChangeIncreaseSpeedPlane = overallSpeedOfChange * speedCoefficientReserveFirstPlane;
         float speedChangeReduceSpeedPlane = -overallSpeedOfChange * (1 - speedCoefficientReserveFirstPlane); // "-" т.к. замедляем
+
+        Debug.Log($"Ускор={increaseSpeedPlane.GetNumberPlane}({speedChangeIncreaseSpeedPlane})  Замедл={reduceSpeedPlane.GetNumberPlane}({speedChangeReduceSpeedPlane})");
+
 
         float timeBetveansCountFrame = Time.time / Time.frameCount * _countFrameСalculatingNextPosition;
         increaseSpeedPlane.UpdatingSpeedPlaneForWhile(speedChangeIncreaseSpeedPlane, timeBetveansCountFrame, true);

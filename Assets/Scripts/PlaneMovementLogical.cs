@@ -4,11 +4,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityNightPool;
+using TMPro;
 
 public class PlaneMovementLogical : MonoBehaviour
 {
     public enum StatePlane { BeginFly, Fly, FinishFly }
 
+    [Header("Отображение текущих параметров")]
+    [SerializeField] private bool _showParametrOnDisplay;
+    [SerializeField] private TextMeshPro _textNumberPlane;
+    [SerializeField] private TextMeshPro _textCurrentPosPlane;
+    [SerializeField] private TextMeshPro _textNextPosPlane;
+    [SerializeField] private TextMeshPro _textSpeedPlane;
+
+    [Space]
     [Header("Параметры самолёта")]
     [SerializeField] private float _radiusDistansShip;
     [SerializeField] private float _radiusDistansPlanes;
@@ -26,9 +35,11 @@ public class PlaneMovementLogical : MonoBehaviour
     private PoolObject _pool;
     private Transform _transformShip;
     private Coroutine _coroutineResetSpeed;
+    private int _currentUnicalNumberPlane;
     private float _timeStartFinishedFly;
     private float _currentSpeed;
     private float _currentNormalSpeed;
+    private Vector3 _nextPositionAfterNumbersFrames;
 
     private StatePlane CurrentStatePlane { get; set; }
     public UnityEvent EventAfterFinishFly { get; } = new UnityEvent();
@@ -36,8 +47,39 @@ public class PlaneMovementLogical : MonoBehaviour
     /// <summary>
     /// Позиция самолёта, через CountFrameСalculatingNextPosition кадров.
     /// </summary>
-    public Vector3 NextPositionAfterNumbersFrames { get; private set; }
+    public Vector3 NextPositionAfterNumbersFrames
+    {
+        get { return _nextPositionAfterNumbersFrames; }
+        private set
+        {
+            _nextPositionAfterNumbersFrames = value;
+            if (_showParametrOnDisplay)
+                ShowCurrentParametrsOnDisplay();
+        }
+    }
 
+    private void ShowCurrentParametrsOnDisplay()
+    {
+        if (CurrentSpeed == _currentNormalSpeed)
+        {
+            _textSpeedPlane.text = $"Speed: <color=white>{CurrentSpeed}</color>";
+        }
+        else
+        {
+            if (CurrentSpeed > _currentNormalSpeed)
+                _textSpeedPlane.text = $"Speed: <color=yellow>{CurrentSpeed}</color>";
+            else
+                _textSpeedPlane.text = $"Speed: <color=red>{CurrentSpeed}</color>";
+        }
+
+        _textSpeedPlane.text += $"  <color=white>[{_minSpeed} , {_maxSpeed}]</color>";
+
+        _textCurrentPosPlane.text = $"Pos:{transform.position}";
+        _textNextPosPlane.text = $"NextPos({CountFrameСalculatingNextPosition}):{_nextPositionAfterNumbersFrames}";
+    }
+
+
+    public int GetNumberPlane { get { return _currentUnicalNumberPlane; } }
     /// <summary>
     /// Номер следующего кадра, для которого расчитывается NextPositionAfterNumbersFrames
     /// </summary>
@@ -72,8 +114,14 @@ public class PlaneMovementLogical : MonoBehaviour
         _pool = GetComponent<PoolObject>();
         if (_pool == null)
             Debug.LogError($"Project({this}, _pool): Не добавлен объект PoolObject");
+        if(_textNumberPlane == null)
+            Debug.LogError($"Project({this}, _textNumberPlane): Не добавлен объект TextMeshPro, для отображения номера самолёта");
         if (_countFlyCircles ==0)
             Debug.LogError($"Project({this}, _countFlyCircles): Самолёт не может не совершать кругов");
+
+        _textSpeedPlane.text = "";
+        _textCurrentPosPlane.text = "";
+        _textNextPosPlane.text = "";
     }
 
     void Update()
@@ -86,8 +134,12 @@ public class PlaneMovementLogical : MonoBehaviour
         _transformShip = transformShip;
         CurrentStatePlane = StatePlane.BeginFly;
 
-        CurrentSpeed = (_maxSpeed + _minSpeed) / 2f;
-        _currentNormalSpeed = CurrentSpeed;
+        _currentUnicalNumberPlane = GenerateUnicalNumberPlane.GenerateUnicalNumberForPlane;
+        _textNumberPlane.text = _currentUnicalNumberPlane.ToString();
+        gameObject.name = _currentUnicalNumberPlane.ToString();
+
+        _currentNormalSpeed = (_maxSpeed + _minSpeed) / 2f;
+        CurrentSpeed = _currentNormalSpeed;
         StartCoroutine(FinishFlyAfterTime(_timeFly));
     }
 
@@ -108,7 +160,8 @@ public class PlaneMovementLogical : MonoBehaviour
                 }
             case StatePlane.FinishFly:
                 {
-                    FlyReturnOnShip();
+                    //FlyReturnOnShip();
+                    FinishFly();
                     break;
                 }
         }
@@ -122,8 +175,8 @@ public class PlaneMovementLogical : MonoBehaviour
         FlyPlaneLine(CurrentSpeed, Vector3.up, Space.Self, false);
         if (Vector3.Distance(_transformShip.position, transform.position) >= _radiusDistansShip)
         {
-            CurrentSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, _timeFly);
-            _currentNormalSpeed = CurrentSpeed;
+            _currentNormalSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, _timeFly);
+            CurrentSpeed = _currentNormalSpeed;
             CurrentStatePlane = StatePlane.Fly;
         }
     }
@@ -134,6 +187,8 @@ public class PlaneMovementLogical : MonoBehaviour
     /// </summary>
     private void FlyReturnOnShip()
     {
+        //TO DO: не изменяется скорость
+
         Vector3 movementDirection = _transformShip.position - transform.position;
         float angleBeetweenPlaneAndShip = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position);
         float angleRotatePlaneOnShip = GetVerticalAngleShipRotate();
@@ -142,26 +197,33 @@ public class PlaneMovementLogical : MonoBehaviour
         {
             //проверяем находится ли корабль между текущем положением и положением в следующем кадре.
             //Если да, то считаем, что самолёт вернулся на корабль
-            Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
+            //Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
+            Vector3 nexPos = GetNextPosFlyPlaneLine(CurrentSpeed, movementDirection);
             if (CheckPointBetweenTwoPoints(transform.position, nexPos, _transformShip.position))
                 FinishFly();
 
-            FlyPlaneLine(_currentSpeed, movementDirection, Space.World);
+            //FlyPlaneLine(_currentSpeed, movementDirection, Space.World);
+            FlyPlaneLine(CurrentSpeed, movementDirection, Space.World);
         }
         else
         {
             //изменяем скорость в зависимости от оставшегося времени т.к. корабль может двигаться и увеличивать растояние
             // TO DO: не учитывается путь до корабля (не понятно что делать, если время закончиться т.к. корабль может уплыть)
             float lastTime = (_timeLive - _timeFly) - (Time.deltaTime - _timeStartFinishedFly);
-            float speedLinear = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, lastTime);
+            //float speedLinear = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, lastTime);
+            CurrentSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, lastTime);
 
-            float nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + speedLinear;
+
+            //float nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + speedLinear;
+            float nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + CurrentSpeed;
 
             //подгоняем угол поворота самолёта под угол приземление в случае, если он проскочит угол приземления в следующем кадре
             if (angleBeetweenPlaneAndShip < angleRotatePlaneOnShip && nextAngleBeetweenPlaneAndShip > angleRotatePlaneOnShip)
             {
-                speedLinear = CorrectSpeedLine(angleRotatePlaneOnShip - angleBeetweenPlaneAndShip);
-                nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + speedLinear;
+                //speedLinear = CorrectSpeedLine(angleRotatePlaneOnShip - angleBeetweenPlaneAndShip);
+                //nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + speedLinear;
+                CurrentSpeed = CorrectSpeedLine(angleRotatePlaneOnShip - angleBeetweenPlaneAndShip);
+                nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + CurrentSpeed;
             }
 
             float minAngleSectorLanding = angleRotatePlaneOnShip - _angleSectorLanding / 2f;
@@ -174,7 +236,8 @@ public class PlaneMovementLogical : MonoBehaviour
             {
                 //проверяем находится ли корабль между текущем положением и положением в следующем кадре.
                 //Если да, то считаем, что самолёт вернулся на корабль
-                Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
+                //Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
+                Vector3 nexPos = GetNextPosFlyPlaneLine(CurrentSpeed, movementDirection);
                 if (CheckPointBetweenTwoPoints(transform.position, nexPos, _transformShip.position))
                     FinishFly();
 
@@ -190,7 +253,8 @@ public class PlaneMovementLogical : MonoBehaviour
                 directionMinDistanseToFinish = Vector3.forward;
 
             if (directionMinDistanseToFinish != Vector3.zero)
-                FlyPlaneCircle(_transformShip.position, speedLinear, directionMinDistanseToFinish);
+                FlyPlaneCircle(_transformShip.position, CurrentSpeed, directionMinDistanseToFinish);
+                //FlyPlaneCircle(_transformShip.position, speedLinear, directionMinDistanseToFinish);
         }
     }
 
@@ -206,9 +270,9 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         Vector3 nextPos = GetNextPosFlyPlaneCircle(сentralRotationPoint, speedLinear, directionMinDistanseToFinish);
         RotatePlaneToNextPoint(nextPos);
-        NextPositionAfterNumbersFrames = GetNextPosFlyPlaneCircle(сentralRotationPoint, speedLinear, directionMinDistanseToFinish, CountFrameСalculatingNextPosition);
 
         transform.RotateAround(сentralRotationPoint, directionMinDistanseToFinish, speedLinear);
+        NextPositionAfterNumbersFrames = GetNextPosFlyPlaneCircle(сentralRotationPoint, speedLinear, directionMinDistanseToFinish, CountFrameСalculatingNextPosition);
     }
 
     /// <summary>
@@ -246,7 +310,8 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         float speedAngle = countCircle * 2 * Mathf.PI * radiusCircle / timeOnAllCircle;
         speedAngle = CorrectSpeedAngle(speedAngle);
-        float speedLinear = CorrectSpeedLine(speedAngle * _radiusDistansShip);
+        //float speedLinear = CorrectSpeedLine(speedAngle * _radiusDistansShip);
+        float speedLinear = CorrectSpeedLine(speedAngle * radiusCircle);
 
         return speedLinear;
     }
@@ -268,8 +333,8 @@ public class PlaneMovementLogical : MonoBehaviour
             Vector3 nextPos = GetNextPosFlyPlaneLine(speed, direction);
             RotatePlaneToNextPoint(nextPos);
         }
-        NextPositionAfterNumbersFrames = GetNextPosFlyPlaneLine(speed, direction, CountFrameСalculatingNextPosition);
         transform.Translate(direction.normalized * speed * Time.deltaTime, coordinateSpace);
+        NextPositionAfterNumbersFrames = GetNextPosFlyPlaneLine(speed, direction, CountFrameСalculatingNextPosition);
     }
 
     /// <summary>
@@ -329,8 +394,9 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         if (_coroutineResetSpeed != null)
             StopCoroutine(_coroutineResetSpeed);
+
         _coroutineResetSpeed = null;
-        CurrentSpeed = needAddSpeed ? _currentSpeed + speed : speed;
+        CurrentSpeed = needAddSpeed ? CurrentSpeed + speed : speed;
 
         _coroutineResetSpeed = StartCoroutine(ResetSpeedToNormal(time));
     }
