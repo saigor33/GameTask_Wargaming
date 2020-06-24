@@ -233,6 +233,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57cdae98204c6ab458fda542ff9dfdd2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  listPlanes:
+  - Distans: 0
+    FirstPlane: {fileID: 0}
+    SecondPlane: {fileID: 0}
+  - Distans: 0
+    FirstPlane: {fileID: 0}
+    SecondPlane: {fileID: 0}
+  - Distans: 0
+    FirstPlane: {fileID: 0}
+    SecondPlane: {fileID: 0}
+  - Distans: 0
+    FirstPlane: {fileID: 0}
+    SecondPlane: {fileID: 0}
+  - Distans: 0
+    FirstPlane: {fileID: 0}
+    SecondPlane: {fileID: 0}
   "_countFrame\u0421alculatingNextPosition": 3
 --- !u!4 &1901843990
 Transform:

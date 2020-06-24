@@ -40,6 +40,7 @@ public class PlaneMovementLogical : MonoBehaviour
     private float _currentSpeed;
     private float _currentNormalSpeed;
     private Vector3 _nextPositionAfterNumbersFrames;
+    private Vector3 _nextPositionPlane;
 
     private StatePlane CurrentStatePlane { get; set; }
     public UnityEvent EventAfterFinishFly { get; } = new UnityEvent();
@@ -55,6 +56,15 @@ public class PlaneMovementLogical : MonoBehaviour
             _nextPositionAfterNumbersFrames = value;
             if (_showParametrOnDisplay)
                 ShowCurrentParametrsOnDisplay();
+        }
+    }
+
+    private Vector3 NxtPositionPlane
+    {
+        get { return _nextPositionPlane; }
+        set
+        {
+            _nextPositionPlane = value;
         }
     }
 
@@ -155,7 +165,37 @@ public class PlaneMovementLogical : MonoBehaviour
                 }
             case StatePlane.Fly:
                 {
-                    FlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
+                    if (Vector3.Distance(transform.position, _transformShip.position) != _radiusDistansShip)
+                    {
+                        Vector3 nextPosCircle = GetNextPosFlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
+                        //Vector3 targetPointOnCircle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position);
+                        float currentAngle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position, 0);
+
+                        float posX = _transformShip.position.x + Mathf.Cos(currentAngle * Mathf.PI / 180) * _radiusDistansShip;
+                        float posY = _transformShip.position.y + Mathf.Sin(currentAngle * Mathf.PI / 180) * _radiusDistansShip;
+
+                        Vector3 nextPointOnCircle =  new Vector3(posX, posY, 0);
+
+                        Vector3 vectorMovingOnCircle = nextPosCircle - transform.position;
+                        Vector3 vectorMovingToCircle = nextPointOnCircle - transform.position;
+
+                        Vector3 directionMoving = vectorMovingOnCircle + vectorMovingToCircle;
+                        //Debug.Log("не _radiusDistansShip");
+
+                        //FlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
+                        FlyPlaneLine(CurrentSpeed, directionMoving, Space.World, true);
+
+                        //TO DO: надо подкорректировать т.к. когда самолёты летят за кораблём они не поворачиваются к нему
+                        float Angle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position,0);
+                        transform.eulerAngles = new Vector3(0, 0, Angle);
+
+
+                    }
+                    else
+                    {
+                        Debug.Log("== _radiusDistansShip");
+                        FlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
+                    }
                     break;
                 }
             case StatePlane.FinishFly:
@@ -165,6 +205,7 @@ public class PlaneMovementLogical : MonoBehaviour
                     break;
                 }
         }
+
     }
 
     /// <summary>
@@ -173,6 +214,7 @@ public class PlaneMovementLogical : MonoBehaviour
     private void BeginFly()
     {
         FlyPlaneLine(CurrentSpeed, Vector3.up, Space.Self, false);
+
         if (Vector3.Distance(_transformShip.position, transform.position) >= _radiusDistansShip)
         {
             _currentNormalSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, _timeFly);
@@ -268,11 +310,13 @@ public class PlaneMovementLogical : MonoBehaviour
     /// <param name="directionMinDistanseToFinish"></param>
     private void FlyPlaneCircle(Vector3 сentralRotationPoint, float speedLinear, Vector3 directionMinDistanseToFinish)
     {
-        Vector3 nextPos = GetNextPosFlyPlaneCircle(сentralRotationPoint, speedLinear, directionMinDistanseToFinish);
-        RotatePlaneToNextPoint(nextPos);
+        NxtPositionPlane = GetNextPosFlyPlaneCircle(сentralRotationPoint, speedLinear, directionMinDistanseToFinish);
+        //RotatePlaneToNextPoint(nextPos);
 
         transform.RotateAround(сentralRotationPoint, directionMinDistanseToFinish, speedLinear);
         NextPositionAfterNumbersFrames = GetNextPosFlyPlaneCircle(сentralRotationPoint, speedLinear, directionMinDistanseToFinish, CountFrameСalculatingNextPosition);
+        
+        //RotatePlaneToNextPoint(NextPositionAfterNumbersFrames);
     }
 
     /// <summary>
@@ -330,11 +374,16 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         if (needCorrectRotate)
         {
-            Vector3 nextPos = GetNextPosFlyPlaneLine(speed, direction);
-            RotatePlaneToNextPoint(nextPos);
+            NxtPositionPlane = GetNextPosFlyPlaneLine(speed, direction);
+            RotatePlaneToNextPoint(NxtPositionPlane);
         }
         transform.Translate(direction.normalized * speed * Time.deltaTime, coordinateSpace);
         NextPositionAfterNumbersFrames = GetNextPosFlyPlaneLine(speed, direction, CountFrameСalculatingNextPosition);
+        //if (needCorrectRotate)
+        //{
+        //    Vector3 nextPos = GetNextPosFlyPlaneLine(speed, direction);
+        //    RotatePlaneToNextPoint(NextPositionAfterNumbersFrames);
+        //}
     }
 
     /// <summary>
@@ -482,8 +531,10 @@ public class PlaneMovementLogical : MonoBehaviour
     /// <param name="nextPoint"></param>
     private void RotatePlaneToNextPoint(Vector3 nextPoint)
     {
+        //float angleShipRotat = Mathf.Round(transform.rotation.eulerAngles.z);
         float angleBeetweenNextPoint = GetAngleBeetweenTwoPoints(transform.position, nextPoint);
         transform.eulerAngles = new Vector3(0, 0, angleBeetweenNextPoint);
+        //transform.Rotate(Vector3.forward, angleBeetweenNextPoint - angleShipRotat);
     }
 
 
