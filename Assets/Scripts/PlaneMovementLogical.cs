@@ -109,6 +109,9 @@ public class PlaneMovementLogical : MonoBehaviour
         private set { _currentSpeed = CorrectSpeedLine(value); }
     }
 
+    private float CurrentRadiusDistansShip { get; set; }
+
+
     /// <summary>
     /// Получить максимальную скорость объекта
     /// </summary>
@@ -147,6 +150,7 @@ public class PlaneMovementLogical : MonoBehaviour
         _currentUnicalNumberPlane = GenerateUnicalNumberPlane.GenerateUnicalNumberForPlane;
         _textNumberPlane.text = _currentUnicalNumberPlane.ToString();
         gameObject.name = _currentUnicalNumberPlane.ToString();
+        CurrentRadiusDistansShip = _radiusDistansShip;
 
         _currentNormalSpeed = (_maxSpeed + _minSpeed) / 2f;
         CurrentSpeed = _currentNormalSpeed;
@@ -165,27 +169,24 @@ public class PlaneMovementLogical : MonoBehaviour
                 }
             case StatePlane.Fly:
                 {
-                    if (Vector3.Distance(transform.position, _transformShip.position) != _radiusDistansShip)
+                    if (Vector3.Distance(transform.position, _transformShip.position) != CurrentRadiusDistansShip)
                     {
                         Vector3 nextPosCircle = GetNextPosFlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
-                        //Vector3 targetPointOnCircle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position);
                         float currentAngle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position, 0);
 
-                        float posX = _transformShip.position.x + Mathf.Cos(currentAngle * Mathf.PI / 180) * _radiusDistansShip;
-                        float posY = _transformShip.position.y + Mathf.Sin(currentAngle * Mathf.PI / 180) * _radiusDistansShip;
+                        float posX = _transformShip.position.x + Mathf.Cos(currentAngle * Mathf.PI / 180) * CurrentRadiusDistansShip;
+                        float posY = _transformShip.position.y + Mathf.Sin(currentAngle * Mathf.PI / 180) * CurrentRadiusDistansShip;
 
-                        Vector3 nextPointOnCircle =  new Vector3(posX, posY, 0);
+                        Vector3 currentPointOnCircle =  new Vector3(posX, posY, 0);
 
                         Vector3 vectorMovingOnCircle = nextPosCircle - transform.position;
-                        Vector3 vectorMovingToCircle = nextPointOnCircle - transform.position;
+                        Vector3 vectorMovingToCircle = currentPointOnCircle - transform.position;
 
                         Vector3 directionMoving = vectorMovingOnCircle + vectorMovingToCircle;
-                        //Debug.Log("не _radiusDistansShip");
-
-                        //FlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
                         FlyPlaneLine(CurrentSpeed, directionMoving, Space.World, true);
 
                         //TO DO: надо подкорректировать т.к. когда самолёты летят за кораблём они не поворачиваются к нему
+                        //TO DO: поворот телепортацией
                         float Angle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position,0);
                         transform.eulerAngles = new Vector3(0, 0, Angle);
 
@@ -193,15 +194,118 @@ public class PlaneMovementLogical : MonoBehaviour
                     }
                     else
                     {
-                        Debug.Log("== _radiusDistansShip");
                         FlyPlaneCircle(_transformShip.position, CurrentSpeed, Vector3.forward);
                     }
                     break;
                 }
             case StatePlane.FinishFly:
                 {
-                    //FlyReturnOnShip();
-                    FinishFly();
+                    float angleBeetweenPlaneAndShip = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position);
+                    float angleRotatePlaneLandingOnShip = GetVerticalAngleShipRotate();
+
+                    float nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + CurrentSpeed;
+
+                    float minAngleSectorLanding = angleRotatePlaneLandingOnShip - _angleSectorLanding / 2f;
+                    float maxAngleSectorLanding = angleRotatePlaneLandingOnShip + _angleSectorLanding / 2f;
+
+                    //подгоняем угол поворота самолёта под угол приземление в случае, если он проскочит угол приземления в следующем кадре
+                    if (angleBeetweenPlaneAndShip < angleRotatePlaneLandingOnShip && nextAngleBeetweenPlaneAndShip > angleRotatePlaneLandingOnShip)
+                    {
+                        CurrentSpeed = CorrectSpeedLine(angleRotatePlaneLandingOnShip - angleBeetweenPlaneAndShip);
+                        nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + CurrentSpeed;
+                    }
+
+                    //Определяем направление с минимальным растоянием до сектора преземления
+                    Vector3 directionMinDistanseToFinish = Vector3.zero;
+                    if (maxAngleSectorLanding - angleBeetweenPlaneAndShip < 0)
+                        directionMinDistanseToFinish = Vector3.back;
+
+                    if (minAngleSectorLanding - angleBeetweenPlaneAndShip > 0)
+                        directionMinDistanseToFinish = Vector3.forward;
+
+                        Vector3 nextPositionPlane = new Vector3();
+                    //если самолёт в секторе или проскочит его в след кадре, то двигаем в направлении угла приземления и центра посадки
+                    if ((angleBeetweenPlaneAndShip < minAngleSectorLanding && nextAngleBeetweenPlaneAndShip > maxAngleSectorLanding)
+                        || (angleBeetweenPlaneAndShip >= minAngleSectorLanding && angleBeetweenPlaneAndShip <= maxAngleSectorLanding))
+                    {
+
+                        if (angleBeetweenPlaneAndShip == angleRotatePlaneLandingOnShip)
+                        {
+                            Debug.Log("Sector: == angleRotatePlaneLandingOnShip");
+                            Vector3 directionMoving = _transformShip.position -transform.position;
+                            FlyPlaneLine(CurrentSpeed, directionMoving, Space.World, true);
+                            nextPositionPlane = GetNextPosFlyPlaneLine(CurrentSpeed, directionMoving);
+
+                        }
+                        else
+                        {
+                            Debug.Log("Sector: != angleRotatePlaneLandingOnShip");
+                            //Vector3 nextPosCircle = GetNextPosFlyPlaneCircle(_transformShip.position, CurrentSpeed, directionMinDistanseToFinish); //Vector3.forward
+                            //float currentAngle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position, 0);
+
+                            float distanseToShip = Vector3.Distance(_transformShip.position, transform.position);
+                            
+                            float posX = _transformShip.position.x + Mathf.Cos((angleRotatePlaneLandingOnShip+90) * Mathf.PI / 180) * distanseToShip;
+                            float posY = _transformShip.position.y + Mathf.Sin((angleRotatePlaneLandingOnShip+90) * Mathf.PI / 180) * distanseToShip;
+
+                            Vector3 pointOnCircleAngleLanging = new Vector3(posX, posY, 0);
+
+                            Vector3 vectorMovingToAgleLanding = pointOnCircleAngleLanging - transform.position;
+                            Vector3 vectorMovingToShip = _transformShip.position - transform.position;
+
+                            Vector3 directionMoving = vectorMovingToAgleLanding + vectorMovingToShip;
+                            FlyPlaneLine(CurrentSpeed, directionMoving, Space.World, true);
+                            nextPositionPlane = GetNextPosFlyPlaneLine(CurrentSpeed, directionMoving);
+                        }
+
+                        //if (CheckPointBetweenTwoPoints(transform.position, nextPositionPlane, _transformShip.position))
+                        //    FinishFly();
+                        float distanCurrentPosPlaneAndShip = Vector3.Distance(transform.position, _transformShip.position);
+                        float distanNextPosAndCurrentPos = Vector3.Distance(nextPositionPlane, transform.position);
+
+                        if (distanNextPosAndCurrentPos > distanCurrentPosPlaneAndShip)
+                        {
+                            FinishFly();
+                            return;
+                        }
+
+
+                    }
+                    else
+                    {
+                        if (Vector3.Distance(transform.position, _transformShip.position) != CurrentRadiusDistansShip)
+                        {
+
+                            Debug.Log("NO Sector: != CurrentRadiusDistansShip");
+                            Vector3 nextPosCircle = GetNextPosFlyPlaneCircle(_transformShip.position, CurrentSpeed, directionMinDistanseToFinish); //Vector3.forward
+
+                            float currentAngle = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position, 0);
+
+                            float posX = _transformShip.position.x + Mathf.Cos(currentAngle * Mathf.PI / 180) * CurrentRadiusDistansShip;
+                            float posY = _transformShip.position.y + Mathf.Sin(currentAngle * Mathf.PI / 180) * CurrentRadiusDistansShip;
+
+                            Vector3 currentPointOnCircle = new Vector3(posX, posY, 0);
+
+                            Vector3 vectorMovingOnCircle = nextPosCircle - transform.position;
+                            Vector3 vectorMovingToCircle = currentPointOnCircle- transform.position  ;
+                            //Vector3 vectorMovingToShip = _transformShip.position - transform.position;
+
+                            Vector3 directionMoving = vectorMovingOnCircle + vectorMovingToCircle;
+                            FlyPlaneLine(CurrentSpeed, directionMoving, Space.World, false);
+                            nextPositionPlane = GetNextPosFlyPlaneLine(CurrentSpeed, directionMoving);
+                        }
+                        else
+                        {
+                            Debug.Log("NO Sector: == CurrentRadiusDistansShip");
+                            if (directionMinDistanseToFinish != Vector3.zero)
+                            {
+                                FlyPlaneCircle(_transformShip.position, CurrentSpeed, directionMinDistanseToFinish);
+                                nextPositionPlane = GetNextPosFlyPlaneCircle(_transformShip.position, CurrentSpeed, directionMinDistanseToFinish);
+                            }
+                        }
+                    }
+
+                    Debug.Log($"current={transform.position} nextPositionPlane={nextPositionPlane}");
                     break;
                 }
         }
@@ -215,9 +319,10 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         FlyPlaneLine(CurrentSpeed, Vector3.up, Space.Self, false);
 
-        if (Vector3.Distance(_transformShip.position, transform.position) >= _radiusDistansShip)
+        if (Vector3.Distance(_transformShip.position, transform.position) >= CurrentRadiusDistansShip)
         {
-            _currentNormalSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, _timeFly);
+            CurrentRadiusDistansShip = _radiusDistansShip;
+            _currentNormalSpeed = GetSpeedForCircle(_countFlyCircles, CurrentRadiusDistansShip, _timeFly);
             CurrentSpeed = _currentNormalSpeed;
             CurrentStatePlane = StatePlane.Fly;
         }
@@ -229,75 +334,6 @@ public class PlaneMovementLogical : MonoBehaviour
     /// </summary>
     private void FlyReturnOnShip()
     {
-        //TO DO: не изменяется скорость
-
-        Vector3 movementDirection = _transformShip.position - transform.position;
-        float angleBeetweenPlaneAndShip = GetAngleBeetweenTwoPoints(_transformShip.position, transform.position);
-        float angleRotatePlaneOnShip = GetVerticalAngleShipRotate();
-
-        if (angleBeetweenPlaneAndShip == angleRotatePlaneOnShip)
-        {
-            //проверяем находится ли корабль между текущем положением и положением в следующем кадре.
-            //Если да, то считаем, что самолёт вернулся на корабль
-            //Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
-            Vector3 nexPos = GetNextPosFlyPlaneLine(CurrentSpeed, movementDirection);
-            if (CheckPointBetweenTwoPoints(transform.position, nexPos, _transformShip.position))
-                FinishFly();
-
-            //FlyPlaneLine(_currentSpeed, movementDirection, Space.World);
-            FlyPlaneLine(CurrentSpeed, movementDirection, Space.World);
-        }
-        else
-        {
-            //изменяем скорость в зависимости от оставшегося времени т.к. корабль может двигаться и увеличивать растояние
-            // TO DO: не учитывается путь до корабля (не понятно что делать, если время закончиться т.к. корабль может уплыть)
-            float lastTime = (_timeLive - _timeFly) - (Time.deltaTime - _timeStartFinishedFly);
-            //float speedLinear = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, lastTime);
-            CurrentSpeed = GetSpeedForCircle(_countFlyCircles, _radiusDistansShip, lastTime);
-
-
-            //float nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + speedLinear;
-            float nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + CurrentSpeed;
-
-            //подгоняем угол поворота самолёта под угол приземление в случае, если он проскочит угол приземления в следующем кадре
-            if (angleBeetweenPlaneAndShip < angleRotatePlaneOnShip && nextAngleBeetweenPlaneAndShip > angleRotatePlaneOnShip)
-            {
-                //speedLinear = CorrectSpeedLine(angleRotatePlaneOnShip - angleBeetweenPlaneAndShip);
-                //nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + speedLinear;
-                CurrentSpeed = CorrectSpeedLine(angleRotatePlaneOnShip - angleBeetweenPlaneAndShip);
-                nextAngleBeetweenPlaneAndShip = angleBeetweenPlaneAndShip + CurrentSpeed;
-            }
-
-            float minAngleSectorLanding = angleRotatePlaneOnShip - _angleSectorLanding / 2f;
-            float maxAngleSectorLanding = angleRotatePlaneOnShip + _angleSectorLanding / 2f;
-
-            //Проверяем проскочит ли самолёт сектор приземления в следующем кадре или он находится в секторе приземление. 
-            //Если да, то двигаем по прямой к кораблю 
-            if ((angleBeetweenPlaneAndShip < minAngleSectorLanding && nextAngleBeetweenPlaneAndShip > maxAngleSectorLanding)
-                || (angleBeetweenPlaneAndShip >= minAngleSectorLanding && angleBeetweenPlaneAndShip <= maxAngleSectorLanding))
-            {
-                //проверяем находится ли корабль между текущем положением и положением в следующем кадре.
-                //Если да, то считаем, что самолёт вернулся на корабль
-                //Vector3 nexPos = GetNextPosFlyPlaneLine(_currentSpeed, movementDirection);
-                Vector3 nexPos = GetNextPosFlyPlaneLine(CurrentSpeed, movementDirection);
-                if (CheckPointBetweenTwoPoints(transform.position, nexPos, _transformShip.position))
-                    FinishFly();
-
-                FlyPlaneLine(_currentSpeed, movementDirection, Space.World);
-            }
-
-            //Определяем направление с минимальным растоянием до сектора преземления
-            Vector3 directionMinDistanseToFinish = Vector3.zero;
-            if (maxAngleSectorLanding - angleBeetweenPlaneAndShip < 0)
-                directionMinDistanseToFinish = Vector3.back;
-
-            if (minAngleSectorLanding - angleBeetweenPlaneAndShip > 0)
-                directionMinDistanseToFinish = Vector3.forward;
-
-            if (directionMinDistanseToFinish != Vector3.zero)
-                FlyPlaneCircle(_transformShip.position, CurrentSpeed, directionMinDistanseToFinish);
-                //FlyPlaneCircle(_transformShip.position, speedLinear, directionMinDistanseToFinish);
-        }
     }
 
 
@@ -354,7 +390,7 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         float speedAngle = countCircle * 2 * Mathf.PI * radiusCircle / timeOnAllCircle;
         speedAngle = CorrectSpeedAngle(speedAngle);
-        //float speedLinear = CorrectSpeedLine(speedAngle * _radiusDistansShip);
+        //float speedLinear = CorrectSpeedLine(speedAngle * CurrentRadiusDistansShip);
         float speedLinear = CorrectSpeedLine(speedAngle * radiusCircle);
 
         return speedLinear;
@@ -522,6 +558,11 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         CurrentStatePlane = StatePlane.FinishFly;
+        if (CurrentRadiusDistansShip - GetRadiusDistansPlanes > 0)
+            CurrentRadiusDistansShip -= GetRadiusDistansPlanes;
+        else
+            CurrentRadiusDistansShip += GetRadiusDistansPlanes;
+
         _timeStartFinishedFly = Time.time;
     }
 
@@ -549,6 +590,10 @@ public class PlaneMovementLogical : MonoBehaviour
     {
         Vector3 vectorPosFirstAndCurrent = new Vector3(firstPont.x - checkPoint.x, firstPont.y - checkPoint.y, firstPont.z - checkPoint.z);
         Vector3 vectorPosCurrentAndSecond = new Vector3(secondPoint.x - checkPoint.x, secondPoint.y - checkPoint.y, secondPoint.z - checkPoint.z);
+        Vector3 zeroVector = Vector3.zero;
+        if (vectorPosFirstAndCurrent == zeroVector || vectorPosCurrentAndSecond == zeroVector)
+            return true;
+
         float angle = Vector3.Angle(vectorPosFirstAndCurrent, vectorPosCurrentAndSecond);
 
         return (angle == 180) ? true : false;

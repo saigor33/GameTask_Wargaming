@@ -1055,9 +1055,9 @@ MonoBehaviour:
   _minSpeed: 0.5
   _maxSpeed: 4
   _maxAngleSpeed: 0.7
-  _timeFly: 50
+  _timeFly: 10
   _countFlyCircles: 3
-  _timeLive: 60
+  _timeLive: 15
   _angleSectorLanding: 90
 --- !u!114 &3058996678526848713
 MonoBehaviour:

@@ -358,7 +358,7 @@ public class AirTrafficController : MonoBehaviour
         float speedChangeIncreaseSpeedPlane = overallSpeedOfChange * speedCoefficientReserveFirstPlane;
         float speedChangeReduceSpeedPlane = -overallSpeedOfChange * (1 - speedCoefficientReserveFirstPlane); // "-" т.к. замедляем
 
-        Debug.Log($"Ускор={increaseSpeedPlane.GetNumberPlane}({speedChangeIncreaseSpeedPlane})  Замедл={reduceSpeedPlane.GetNumberPlane}({speedChangeReduceSpeedPlane})");
+        //Debug.Log($"Ускор={increaseSpeedPlane.GetNumberPlane}({speedChangeIncreaseSpeedPlane})  Замедл={reduceSpeedPlane.GetNumberPlane}({speedChangeReduceSpeedPlane})");
 
 
         float timeBetveansCountFrame = Time.time / Time.frameCount * _countFrameСalculatingNextPosition;
