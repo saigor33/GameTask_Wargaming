@@ -3,85 +3,106 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityNightPool;
 
-public class ShipManagerController : MonoBehaviour
+namespace FlyBattels
 {
-    [SerializeField] private int _indexPlaneInPoll;
 
-    [Header("Параметры коробля")]
-    [SerializeField] private float _speedMoving;
-    [SerializeField] private float _speedRotate;
-    [SerializeField] private float _cooldownLaunchPlane;
-    [SerializeField] private int _maxPlaneInAir;
 
-    private float _lastTimeLaunchPlane;
-    private float _currentPlaneInAir;
 
-    private void Awake()
+    public class ShipManagerController : MonoBehaviour
     {
-        _lastTimeLaunchPlane = -_cooldownLaunchPlane;
-        if(!PoolManager.CheckHaveIndexPrefab(_indexPlaneInPoll))
-            Debug.LogError($"Project({this}, _indexPlaneInPoll): Такого индекса не существует в пуле объектов");
-    }
+        [SerializeField] private int _indexPlaneInPoll;
+        [SerializeField] private JoystickContollerMovement _joystickMovement;
 
-    private void Update()
-    {
-        if (!Input.anyKey)
-            return;
-        MovementLogical();
-        CheckLaunchPlan();
-    }
+        [Header("Параметры коробля")]
+        [SerializeField] private float _speedMoving;
+        [SerializeField] private float _speedRotate;
+        [SerializeField] private float _cooldownLaunchPlane;
+        [SerializeField] private int _maxPlaneInAir;
 
-    /// <summary>
-    /// Логика управления передвижение корабля
-    /// </summary>
-    private void MovementLogical()
-    {
-        float shipMovingDirect = Input.GetAxis("ShipMoving");
-        if (shipMovingDirect !=0)
+        private float _lastTimeLaunchPlane;
+        private float _currentPlaneInAir;
+
+        private void Awake()
         {
-            Vector3 movementDirection = new Vector3(0, shipMovingDirect, 0);
-            transform.Translate(movementDirection * _speedMoving * Time.deltaTime);
+            _lastTimeLaunchPlane = -_cooldownLaunchPlane;
+            if (!PoolManager.CheckHaveIndexPrefab(_indexPlaneInPoll))
+                Debug.LogError($"Project({this}, _indexPlaneInPoll): Такого индекса не существует в пуле объектов");
+            if (_joystickMovement == null)
+                Debug.LogError($"Project({this}, _joystickMovement): Не добавлен джостик, отвечающий за передвижение коробля");
+
+            _joystickMovement.OnChangePositionJoystick += MovementLogical;
         }
 
-        float shipRotateDirect = Input.GetAxis("ShipRotation");
-        if (shipRotateDirect != 0)
+        private void Update()
         {
-            Vector3 rotationDirect = new Vector3(0, 0, shipRotateDirect);
-            transform.Rotate(rotationDirect * _speedRotate * Time.deltaTime);
+            if (!Input.anyKey)
+                return;
+            //MovementLogical();
+            CheckLaunchPlan();
         }
-    }
 
-    /// <summary>
-    /// Проверить вызов события запуска самолёта
-    /// </summary>
-    private void CheckLaunchPlan()
-    {
-        if (Input.GetButtonDown("LaunchPlane"))
+        private void OnDestroy()
         {
-            if (Time.time - _lastTimeLaunchPlane > _cooldownLaunchPlane && _currentPlaneInAir< _maxPlaneInAir)
+            _joystickMovement.OnChangePositionJoystick -= MovementLogical;
+        }
+
+        private void MovementLogical(Vector3 movementDirection)
+        {
+            transform.Translate(movementDirection.normalized * _speedMoving * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Логика управления передвижение корабля
+        /// </summary>
+        private void MovementLogical()
+        {
+            float shipMovingDirect = Input.GetAxis("ShipMoving");
+            if (shipMovingDirect != 0)
             {
-                _lastTimeLaunchPlane = Time.time;
+                Vector3 movementDirection = new Vector3(0, shipMovingDirect, 0);
+                transform.Translate(movementDirection * _speedMoving * Time.deltaTime);
+            }
 
-                PoolObject plane = PoolManager.Get(_indexPlaneInPoll);
-                plane.transform.position = transform.position;
-                plane.transform.rotation = transform.rotation;
-                PlaneMovementLogical planeMovementLogical = plane.GetComponent<PlaneMovementLogical>();
-                AirTrafficController.AddPlaneInList(planeMovementLogical);
-                planeMovementLogical.EventAfterFinishFly.AddListener(PlaneFinishFly);
-                _currentPlaneInAir++;
-                planeMovementLogical.Init(transform);
+            float shipRotateDirect = Input.GetAxis("ShipRotation");
+            if (shipRotateDirect != 0)
+            {
+                Vector3 rotationDirect = new Vector3(0, 0, shipRotateDirect);
+                transform.Rotate(rotationDirect * _speedRotate * Time.deltaTime);
             }
         }
+
+        /// <summary>
+        /// Проверить вызов события запуска самолёта
+        /// </summary>
+        private void CheckLaunchPlan()
+        {
+            if (Input.GetButtonDown("LaunchPlane"))
+            {
+                if (Time.time - _lastTimeLaunchPlane > _cooldownLaunchPlane && _currentPlaneInAir < _maxPlaneInAir)
+                {
+                    _lastTimeLaunchPlane = Time.time;
+
+                    PoolObject plane = PoolManager.Get(_indexPlaneInPoll);
+                    plane.transform.position = transform.position;
+                    plane.transform.rotation = transform.rotation;
+                    PlaneMovementLogical planeMovementLogical = plane.GetComponent<PlaneMovementLogical>();
+                    AirTrafficController.AddPlaneInList(planeMovementLogical);
+                    planeMovementLogical.EventAfterFinishFly.AddListener(PlaneFinishFly);
+                    _currentPlaneInAir++;
+                    planeMovementLogical.Init(transform);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Событие, которое необходимо подписать на момент "уничтожения" самолёта.
+        /// Освобождает ячейку свободного самолёта
+        /// </summary>
+        private void PlaneFinishFly()
+        {
+            _currentPlaneInAir--;
+        }
     }
 
-    /// <summary>
-    /// Событие, которое необходимо подписать на момент "уничтожения" самолёта.
-    /// Освобождает ячейку свободного самолёта
-    /// </summary>
-    private void PlaneFinishFly()
-    {
-        _currentPlaneInAir--;
-    }
+
 }
-
-
