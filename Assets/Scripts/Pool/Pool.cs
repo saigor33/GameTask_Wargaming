@@ -18,7 +18,7 @@ namespace UnityNightPool {
         {
 			for (int i = 0; i < _spawned.Count; i++) 
             {
-				if (_spawned[i]!=null && !_spawned [i].Free)
+				if (_spawned[i]!=null && !_spawned[i].Free)
 					_spawned [i].Return ();
 			}
 		}

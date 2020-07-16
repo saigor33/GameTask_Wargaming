@@ -12,9 +12,10 @@ namespace FlyBattels
 
     public class JoystickContollerMovement : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
-        [SerializeField] private GameObject _joystickMovement;
-        [SerializeField] private GameObject _joystickButton;
+        [Header("Компоненты джостика")]
         [SerializeField] private GameObject _joystickContainer;
+        [SerializeField] private GameObject _joystickButton;
+        [SerializeField] private GameObject _joystickBackground;
 
         public event Action<Vector3> OnChangePositionJoystick;
 
@@ -25,16 +26,16 @@ namespace FlyBattels
 
         private void Awake()
         {
-            if (_joystickMovement == null)
-                Debug.LogError($"Project({_joystickMovement}): не добавлен объект _joystickMovement джостик урпавления передвиженим");
-            _defaultPositionJoystickMovement = _joystickMovement.transform.position;
-
+            if (_joystickContainer == null)
+                Debug.LogError($"Project({_joystickContainer}): не добавлен объект _joystickMovement джостик урпавления передвиженим");
+            _defaultPositionJoystickMovement = _joystickContainer.transform.localPosition;
+            Debug.Log($"_defaultPositionJoystickMovement = {_defaultPositionJoystickMovement} local={ _joystickContainer.transform.localPosition}");
             if (_joystickButton == null)
                 Debug.LogError($"Project({_joystickButton}): не добавлен объект _joystickButton, отвечающий за направление движения");
-            if (_joystickContainer == null)
-                Debug.LogError($"Project({_joystickContainer}): не добавлен объект _joystickBackground подложка джостика");
+            if (_joystickBackground == null)
+                Debug.LogError($"Project({_joystickBackground}): не добавлен объект _joystickBackground подложка джостика");
 
-            _radiusMovingJoystic = _joystickContainer.GetComponent<RectTransform>().rect.width / 2f;
+            _radiusMovingJoystic = _joystickBackground.GetComponent<RectTransform>().rect.width / 2f;
         }
 
 
@@ -42,9 +43,9 @@ namespace FlyBattels
         {
             if(_isMoving)
             {
-                _directionMovingJoystick = new Vector2(_joystickButton.transform.position.x - _joystickContainer.transform.position.x,
-                    _joystickButton.transform.position.y - _joystickContainer.transform.position.y);
-                OnChangePositionJoystick.Invoke(_directionMovingJoystick);
+                _directionMovingJoystick = new Vector2(_joystickButton.transform.position.x - _joystickBackground.transform.position.x,
+                    _joystickButton.transform.position.y - _joystickBackground.transform.position.y);
+                OnChangePositionJoystick?.Invoke(_directionMovingJoystick);
             }
         }
 
@@ -53,14 +54,14 @@ namespace FlyBattels
         public void OnBeginDrag(PointerEventData eventData)
         {
 
-            _joystickMovement.transform.position = eventData.pointerCurrentRaycast.screenPosition;
+            _joystickContainer.transform.position = eventData.pointerCurrentRaycast.screenPosition;
             _isMoving = true;
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            float distanseBeetwenJoysticButtonAndContainer = Vector3.Distance(eventData.position, _joystickContainer.transform.position);
-            _directionMovingJoystick = new Vector2( eventData.position.x - _joystickContainer.transform.position.x, eventData.position.y - _joystickContainer.transform.position.y);
+            float distanseBeetwenJoysticButtonAndContainer = Vector3.Distance(eventData.position, _joystickBackground.transform.position);
+            _directionMovingJoystick = new Vector2( eventData.position.x - _joystickBackground.transform.position.x, eventData.position.y - _joystickBackground.transform.position.y);
             if (distanseBeetwenJoysticButtonAndContainer > _radiusMovingJoystic)
             {
                 float angle = Mathf.Atan2(_directionMovingJoystick.y, _directionMovingJoystick.x) / Mathf.PI * 180;
@@ -80,9 +81,9 @@ namespace FlyBattels
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            _joystickMovement.transform.position = _defaultPositionJoystickMovement;
-            _joystickButton.transform.localPosition = Vector3.zero;
             _isMoving = false;
+            _joystickContainer.transform.localPosition = _defaultPositionJoystickMovement;
+            _joystickButton.transform.localPosition = Vector3.zero;
         }
     }
 }

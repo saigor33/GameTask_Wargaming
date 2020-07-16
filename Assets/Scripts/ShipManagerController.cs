@@ -12,6 +12,7 @@ namespace FlyBattels
     {
         [SerializeField] private int _indexPlaneInPoll;
         [SerializeField] private JoystickContollerMovement _joystickMovement;
+        [SerializeField] private ButtonDisplayAndroid _btnStartFly;
 
         [Header("Параметры коробля")]
         [SerializeField] private float _speedMoving;
@@ -29,21 +30,25 @@ namespace FlyBattels
                 Debug.LogError($"Project({this}, _indexPlaneInPoll): Такого индекса не существует в пуле объектов");
             if (_joystickMovement == null)
                 Debug.LogError($"Project({this}, _joystickMovement): Не добавлен джостик, отвечающий за передвижение коробля");
+            if (_btnStartFly == null)
+                Debug.LogError($"Project({this}, _btnStartFly): не добавлена кнопка, отвечающая за вылет самолётов");
 
             _joystickMovement.OnChangePositionJoystick += MovementLogical;
+            _btnStartFly.OnClickButton += StartFlyPlane;
         }
 
-        private void Update()
-        {
-            if (!Input.anyKey)
-                return;
-            //MovementLogical();
-            CheckLaunchPlan();
-        }
+        //private void Update()
+        //{
+        //    if (!Input.anyKey)
+        //        return;
+        //    //MovementLogical();
+        //    //CheckLaunchPlan();
+        //}
 
         private void OnDestroy()
         {
             _joystickMovement.OnChangePositionJoystick -= MovementLogical;
+            _btnStartFly.OnClickButton -= StartFlyPlane;
         }
 
         private void MovementLogical(Vector3 movementDirection)
@@ -91,6 +96,23 @@ namespace FlyBattels
                     _currentPlaneInAir++;
                     planeMovementLogical.Init(transform);
                 }
+            }
+        }
+
+        private void StartFlyPlane()
+        {
+            if (Time.time - _lastTimeLaunchPlane > _cooldownLaunchPlane && _currentPlaneInAir < _maxPlaneInAir)
+            {
+                _lastTimeLaunchPlane = Time.time;
+
+                PoolObject plane = PoolManager.Get(_indexPlaneInPoll);
+                plane.transform.position = transform.position;
+                plane.transform.rotation = transform.rotation;
+                PlaneMovementLogical planeMovementLogical = plane.GetComponent<PlaneMovementLogical>();
+                AirTrafficController.AddPlaneInList(planeMovementLogical);
+                planeMovementLogical.EventAfterFinishFly.AddListener(PlaneFinishFly);
+                _currentPlaneInAir++;
+                planeMovementLogical.Init(transform);
             }
         }
 
