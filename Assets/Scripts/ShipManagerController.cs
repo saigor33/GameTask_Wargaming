@@ -71,7 +71,7 @@ namespace FlyBattels
         public void MoveToPosition(Vector3 targetPosition)
         {
             //Vector3 targetPos = new Vector3 (transform.position.x + position.x, transform.position.y + position.y,0) ;
-             StartCoroutine(MoveOnTime(0.025f, targetPosition));
+             StartCoroutine(MoveOnTime(GlobalDataSettings.TIME_TICK, targetPosition));
             //transform.Translate(position);
         }
 

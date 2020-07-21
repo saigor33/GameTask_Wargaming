@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using PlayerIO.GameLibrary;
+using FlyBattels;
 
 
 namespace MushroomsUnity3DExample
@@ -36,7 +37,8 @@ namespace MushroomsUnity3DExample
             ////AddTimer(respawntoads, 5000);
             //// reset game every 2 minutes
             ////AddTimer(resetgame, 120000);
-            AddTimer(OnTick, TIME_TICK);
+            int timveTickIn_ms = (int)(GlobalDataSettings.TIME_TICK * 1000); //перевод тиков в ms
+            AddTimer(OnTick, timveTickIn_ms);
 
         }
 
