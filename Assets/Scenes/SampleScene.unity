@@ -121,6 +121,18 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!114 &23243637 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: -1163880825511015003, guid: 0331ad22bd1d1fe48943867fb351be36,
+    type: 3}
+  m_PrefabInstance: {fileID: 5352894240189495484}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f33afa981cb94e14e97423a83c1527c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -223,7 +235,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -549, y: -272}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1920, y: 1080}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!224 &548744636 stripped
@@ -539,8 +551,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1818173589}
+  - component: {fileID: 1818173590}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: ManagerMultiplayer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -560,6 +573,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1818173590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1818173588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e589914f7b4b1649ba97781dcb90be2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _playerController: {fileID: 23243637}
+  _prefabPlayerShip: {fileID: 5352894239669070073, guid: 4f5fe9293881cc74da3d6357c6e462f0,
+    type: 3}
 --- !u!224 &1892656052 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 420303720966601622, guid: 0a257aecc1976d64692d4422c8d271cc,
@@ -981,14 +1009,9 @@ PrefabInstance:
       objectReference: {fileID: 548744639}
     - target: {fileID: -1163880825511015003, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}
-      propertyPath: _cooldownLaunchPlane
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -1163880825511015003, guid: 0331ad22bd1d1fe48943867fb351be36,
-        type: 3}
-      propertyPath: _maxPlaneInAir
-      value: 20
-      objectReference: {fileID: 0}
+      propertyPath: _managerMultiplayer
+      value: 
+      objectReference: {fileID: 1818173590}
     - target: {fileID: 5352894239669070073, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}
       propertyPath: m_Name
@@ -997,12 +1020,12 @@ PrefabInstance:
     - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -549
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -272
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}

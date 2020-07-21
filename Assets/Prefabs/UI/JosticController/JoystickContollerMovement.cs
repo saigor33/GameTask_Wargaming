@@ -18,6 +18,7 @@ namespace FlyBattels
         [SerializeField] private GameObject _joystickBackground;
 
         public event Action<Vector3> OnChangePositionJoystick;
+        public event Action OnDropJoystick;
 
         private Vector2 _defaultPositionJoystickMovement;
         private Vector3 _directionMovingJoystick;
@@ -84,6 +85,7 @@ namespace FlyBattels
             _isMoving = false;
             _joystickContainer.transform.localPosition = _defaultPositionJoystickMovement;
             _joystickButton.transform.localPosition = Vector3.zero;
+            OnDropJoystick?.Invoke();
         }
     }
 }

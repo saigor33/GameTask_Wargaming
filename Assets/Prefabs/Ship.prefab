@@ -96,10 +96,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _indexPlaneInPoll: 0
+  _joystickMovement: {fileID: 0}
+  _btnStartFly: {fileID: 0}
+  _managerMultiplayer: {fileID: 0}
   _speedMoving: 2
   _speedRotate: 40
-  _cooldownLaunchPlane: 5
-  _maxPlaneInAir: 5
+  _cooldownLaunchPlane: 0
+  _maxPlaneInAir: 20
 --- !u!1 &5352894239910000023
 GameObject:
   m_ObjectHideFlags: 0
