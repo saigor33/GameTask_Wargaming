@@ -412,6 +412,16 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 420303720966601623, guid: 0a257aecc1976d64692d4422c8d271cc,
+        type: 3}
+      propertyPath: _joystickTransistionBorder
+      value: 
+      objectReference: {fileID: 730202650}
+    - target: {fileID: 420303720966601623, guid: 0a257aecc1976d64692d4422c8d271cc,
+        type: 3}
+      propertyPath: _borderTransitionRadius
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 420303721148004874, guid: 0a257aecc1976d64692d4422c8d271cc,
         type: 3}
       propertyPath: m_Color.r
@@ -440,6 +450,12 @@ PrefabInstance:
         type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0a257aecc1976d64692d4422c8d271cc, type: 3}
+--- !u!1 &730202650 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5757591399578689694, guid: 0a257aecc1976d64692d4422c8d271cc,
+    type: 3}
+  m_PrefabInstance: {fileID: 730202649}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &967683151
 GameObject:
   m_ObjectHideFlags: 0
@@ -542,6 +558,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1601660918 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 420303720966601623, guid: 0a257aecc1976d64692d4422c8d271cc,
+    type: 3}
+  m_PrefabInstance: {fileID: 730202649}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a50e1516e8fccd345a5fe90ba90d71de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1818173588
 GameObject:
   m_ObjectHideFlags: 0
@@ -861,6 +889,16 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 4750772400980617293, guid: 0a257aecc1976d64692d4422c8d271cc,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4750772400980617293, guid: 0a257aecc1976d64692d4422c8d271cc,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0a257aecc1976d64692d4422c8d271cc, type: 3}
 --- !u!1001 &2916265571700858452
@@ -1012,6 +1050,11 @@ PrefabInstance:
       propertyPath: _managerMultiplayer
       value: 
       objectReference: {fileID: 1818173590}
+    - target: {fileID: -1163880825511015003, guid: 0331ad22bd1d1fe48943867fb351be36,
+        type: 3}
+      propertyPath: _joystickUsualShoot
+      value: 
+      objectReference: {fileID: 1601660918}
     - target: {fileID: 5352894239669070073, guid: 0331ad22bd1d1fe48943867fb351be36,
         type: 3}
       propertyPath: m_Name
@@ -1056,31 +1099,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_RootOrder
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5352894239669070075, guid: 0331ad22bd1d1fe48943867fb351be36,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0331ad22bd1d1fe48943867fb351be36, type: 3}

@@ -16,14 +16,10 @@ namespace MushroomsUnity3DExample
     [RoomType("UnityMushrooms")]
     public partial class GameCode : Game<Player>
     {
-        private const int TIME_TICK = 25;
-
         private List<MessageSend> _listMessageBroadcastSendNextTicket = new List<MessageSend>();
         private List<MessageSendPlayer> _listMessagePlaerSendNextTicket = new List<MessageSendPlayer>();
 
 
-        private int last_toad_id = 0;
-        private List<Toad> Toads = new List<Toad>();
 
         // This method is called when an instance of your the game is created
         public override void GameStarted()
@@ -66,6 +62,8 @@ namespace MushroomsUnity3DExample
         public override void UserJoined(Player currentPlayer)
         {
             Console.WriteLine($"user {currentPlayer.Id} join");
+            SendParametrsPlayer(currentPlayer);
+
             foreach (Player player in Players)
             {
                 if (player.ConnectUserId != currentPlayer.ConnectUserId)
@@ -103,8 +101,17 @@ namespace MushroomsUnity3DExample
                     }
                 case GlobalDataSettings.MESSAGE_TYPE_FINISH_MOVE_TO_POINT:
                     {
-                        Console.WriteLine($"FinishMovign");
                         player.movingDirection.isEnabled = false;
+                        break;
+                    }
+                case GlobalDataSettings.MESSAGE_TYPE_SHOOTING:
+                    {
+                        Shooting(player, message);
+                        break;
+                    }
+                case GlobalDataSettings.MESSAGE_TYPE_FINISH_SHOOTING:
+                    {
+                        FinishShooting(player, message);
                         break;
                     }
                 default:
@@ -112,10 +119,55 @@ namespace MushroomsUnity3DExample
                         Console.WriteLine($"WARRING: message.Type = {message.Type} не предусмотрен сценарий");
                         break;
                     }
-
             }
 
         }
+
+        private void Shooting(Player player, Message message)
+        {
+            string typeShoot = message.GetString(0);
+
+            float directPosX = message.GetFloat(1);
+            float directPosY = message.GetFloat(2);
+            StatusAndСoordinates shootingDirection = player.shootingDirection;
+            shootingDirection.InitParametrs(true, directPosX, directPosY);
+
+            switch (typeShoot)
+            {
+                case GlobalDataSettings.MESSAGE_TYPE_USUAL_SHOT:
+                    {
+                        player.shootingDirection = shootingDirection;
+                        break; 
+                    }
+            }
+        }
+
+        private void FinishShooting(Player player, Message message)
+        {
+            string typeShoot = message.GetString(0);
+            switch (typeShoot)
+            {
+                case GlobalDataSettings.MESSAGE_TYPE_USUAL_SHOT:
+                    {
+                        StatusAndСoordinates shootingDirection = player.shootingDirection;
+                        shootingDirection.isEnabled = false;
+                        player.shootingDirection = shootingDirection;
+                        break;
+                    }
+            }
+        }
+
+        private void SendParametrsPlayer(Player player)
+        {
+            Skill usedSkill = player.UsualSkill;
+            Bullet bulletConfig = usedSkill._bulletConfig;
+            float distansShotUsualSkill = bulletConfig.SpeedInSecond * bulletConfig.TimeLive;
+            AddSendMessagePlayer(
+                player,
+                GlobalDataSettings.MESSAGE_TYPE_PLAYER_PARAMETERS,
+                GlobalDataSettings.MESSAGE_TYPE_USUAL_SHOT,
+                distansShotUsualSkill);
+                }
 
         // =============================================================================================================================
         // =============================================================================================================================
@@ -268,4 +320,4 @@ namespace MushroomsUnity3DExample
         //    }
         //}
     }
-    }
+}

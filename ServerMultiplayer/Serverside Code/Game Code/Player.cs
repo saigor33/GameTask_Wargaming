@@ -7,8 +7,19 @@ namespace MushroomsUnity3DExample
         public float posX = 0;
         public float posY = 0;
         public StatusAndСoordinates movingDirection;
+        public StatusAndСoordinates shootingDirection;
+        //public Bullet usualBullet;
         public int toadspicked = 0;
         public float speedPlayer = 0.1f;
+
+        public Skill UsualSkill;
+
+        public Player():base()
+        {
+            Bullet usualBullet = ConfigsPlayer.FactoryInitBullets
+                .GetConfigBullet(ConfigsPlayer.TypeBullet.UsualBullet, this);
+            UsualSkill = new Skill(0.2f, usualBullet);
+        }
     }
 
     public struct StatusAndСoordinates

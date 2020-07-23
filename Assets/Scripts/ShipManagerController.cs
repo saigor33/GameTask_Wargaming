@@ -11,7 +11,7 @@ namespace FlyBattels
     public class ShipManagerController : MonoBehaviour
     {
         [SerializeField] private int _indexPlaneInPoll;
-        [SerializeField] private JoystickContollerMovement _joystickMovement;
+        [SerializeField] private UsualJoystickContoller _joystickMovement;
         [SerializeField] private ButtonDisplayAndroid _btnStartFly;
         [SerializeField] private ManagerMultiplayer _managerMultiplayer;
 
@@ -20,9 +20,16 @@ namespace FlyBattels
         [SerializeField] private float _speedRotate;
         [SerializeField] private float _cooldownLaunchPlane;
         [SerializeField] private int _maxPlaneInAir;
+        [SerializeField] private float _distansUsualShoot;
+
+        [Header("Стрельба")]
+        [SerializeField] private LineRenderer _lineDirectionShoot;
+        [SerializeField] private UsualJoystickContoller _joystickUsualShoot;
 
         private float _lastTimeLaunchPlane;
         private float _currentPlaneInAir;
+
+        private bool _isShooting;
 
         private void Awake()
         {
@@ -35,32 +42,40 @@ namespace FlyBattels
                 Debug.LogError($"Project({this}, _btnStartFly): не добавлена кнопка, отвечающая за вылет самолётов");
             if(_managerMultiplayer==null)
                 Debug.LogError($"Project({this}, _managerMultiplayer): не добавлена объект, осуществляющий взаимодейстие с сервером");
+            if(_lineDirectionShoot == null)
+                Debug.LogError($"Project({this}, _lineDirectionShoot): не добавлена объект, отрисовывающий направление тсрельбы");
+            if (_joystickUsualShoot == null)
+                Debug.LogError($"Project({this}, _joystickUsualShoot): Не добавлен джостик, отвечающий за наведение стрельбы коробля");
 
-            _joystickMovement.OnChangePositionJoystick += MovementLogical;
+            ResetTargeting();
+
+            _joystickMovement.OnChangePositionJoystick_ModeUsed += MovementLogical;
             _joystickMovement.OnDropJoystick += FinishMoventLogical;
+
+            _joystickUsualShoot.OnChangePositionJoystick_ModeTargeting += TargetingUsualShoot;
+            _joystickUsualShoot.OnChangePositionJoystick_ModeUsed += UsualShot;
+            _joystickUsualShoot.OnDropJoystick += FinishTargeting;
+
             _btnStartFly.OnClickButton += StartFlyPlane;
         }
 
-        //private void Update()
-        //{
-        //    if (!Input.anyKey)
-        //        return;
-        //    //MovementLogical();
-        //    //CheckLaunchPlan();
-        //}
 
         private void OnDestroy()
         {
-            _joystickMovement.OnChangePositionJoystick -= MovementLogical;
+            _joystickMovement.OnChangePositionJoystick_ModeUsed -= MovementLogical;
             _joystickMovement.OnDropJoystick -= FinishMoventLogical;
+
+            _joystickUsualShoot.OnChangePositionJoystick_ModeTargeting -= TargetingUsualShoot;
+            _joystickUsualShoot.OnChangePositionJoystick_ModeUsed -= UsualShot;
+           _joystickUsualShoot.OnDropJoystick -= FinishTargeting;
+
             _btnStartFly.OnClickButton -= StartFlyPlane;
         }
 
+        #region Moving
         private void MovementLogical(Vector3 movementDirection)
         {
-            //_managerMultiplayer.SendMessageOnServer_MoveToPoint(movementDirection);
             _managerMultiplayer.InformMoveToDirection(movementDirection);
-            //transform.Translate(movementDirection.normalized * _speedMoving * Time.deltaTime);
         }
 
         private void FinishMoventLogical()
@@ -70,9 +85,7 @@ namespace FlyBattels
 
         public void MoveToPosition(Vector3 targetPosition)
         {
-            //Vector3 targetPos = new Vector3 (transform.position.x + position.x, transform.position.y + position.y,0) ;
-             StartCoroutine(MoveOnTime(GlobalDataSettings.TIME_TICK, targetPosition));
-            //transform.Translate(position);
+            StartCoroutine(MoveOnTime(GlobalDataSettings.TIME_TICK, targetPosition));
         }
 
         private IEnumerator MoveOnTime(float time, Vector2 targetPosition)
@@ -87,7 +100,73 @@ namespace FlyBattels
                 yield return null;
             }
         }
+        #endregion
 
+        #region Shooting
+        /// <summary>
+        /// Наведение обычного выстрела
+        /// </summary>
+        /// <param name="targetingDirection"></param>
+        private void TargetingUsualShoot(Vector3 targetingDirection)
+        {
+            if(_isShooting)
+                FinishUsualShoot();
+
+            Vector3 firstPos = Vector3.zero;
+            Vector3 secondPos = targetingDirection.normalized * _distansUsualShoot;
+            Debug.Log($"Distance shot = {Vector3.Distance(secondPos, firstPos)}");
+            _lineDirectionShoot.SetPosition(0, secondPos);
+            _lineDirectionShoot.SetPosition(1, firstPos);
+        }
+
+        /// <summary>
+        /// Событие при завершении наведения
+        /// </summary>
+        private void FinishTargeting()
+        {
+            FinishUsualShoot();
+            ResetTargeting();
+        }
+
+        private void FinishUsualShoot()
+        {
+            _isShooting = false;
+            _managerMultiplayer.InformFinishShoot(TypeShot.UsualShoot);
+        }
+
+        private void ResetTargeting()
+        {
+            Vector3 vectorZero = Vector3.zero;
+            _lineDirectionShoot.SetPositions(new Vector3[] { vectorZero, vectorZero });
+        }
+
+        private void UsualShot(Vector3 targetingDirection)
+        {
+            TargetingUsualShoot(targetingDirection);
+            _isShooting = true;
+            _managerMultiplayer.InformShotToDirection(TypeShot.UsualShoot, targetingDirection);
+        }
+
+        public void SetDistansShooting(TypeShot typeShot, float distans)
+        {
+            switch (typeShot)
+            {
+                case TypeShot.UsualShoot:
+                    {
+                        _distansUsualShoot = distans;
+                        break;
+                    }
+            }
+        }
+
+
+        #endregion
+
+
+
+
+
+        #region OldCode
 
 
         /// <summary>
@@ -158,6 +237,8 @@ namespace FlyBattels
         {
             _currentPlaneInAir--;
         }
+
+        #endregion
     }
 
 

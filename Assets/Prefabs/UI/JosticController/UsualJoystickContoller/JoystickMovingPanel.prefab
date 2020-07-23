@@ -57,6 +57,8 @@ MonoBehaviour:
   _joystickContainer: {fileID: 420303719697658003}
   _joystickButton: {fileID: 420303720564138985}
   _joystickBackground: {fileID: 420303721148004868}
+  _joystickTransistionBorder: {fileID: 5757591399578689694}
+  _borderTransitionRadius: 0
 --- !u!222 &420303720966601626
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -285,6 +287,12 @@ GameObject:
 --- !u!224 &420303719697658000 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6411605548898597823, guid: ae64aff06fee8e24c8e610f0ad7852e9,
+    type: 3}
+  m_PrefabInstance: {fileID: 6714762897229908783}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &5757591399578689694 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1353529154211408817, guid: ae64aff06fee8e24c8e610f0ad7852e9,
     type: 3}
   m_PrefabInstance: {fileID: 6714762897229908783}
   m_PrefabAsset: {fileID: 0}

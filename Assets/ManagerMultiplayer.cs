@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using PlayerIOClient;
+using System;
 
 namespace FlyBattels
 {
@@ -11,16 +12,13 @@ namespace FlyBattels
         private Connection _connection;
         private List<Message> _msgList = new List<Message>(); //  Messsage queue implementation
 
-         
-
         private string _playerId;
-        private string _infomsg = "";
-        private bool _isJoinedroom;
 
         private void Awake()
         {
             if (_playerController == null)
                 Debug.LogError($"Project({this}, _playerController): Не добавлен корабль игрока");
+
         }
 
         private void Start()
@@ -50,6 +48,11 @@ namespace FlyBattels
             {
                 switch (message.Type)
                 {
+                    case GlobalDataSettings.MESSAGE_TYPE_PLAYER_PARAMETERS:
+                        {
+                            SetPlayerParameters(message);
+                            break;
+                        }
                     case GlobalDataSettings.MESSAGE_TYPE_MOVE_TO_POINT:
                         {
                             MoveToPointFromMessage(message);
@@ -63,6 +66,16 @@ namespace FlyBattels
                     case GlobalDataSettings.MESSAGE_TYPE_PLAYER_LEFT:
                         {
                             OnPlayerLeft(message);
+                            break;
+                        }
+                    case GlobalDataSettings.MESSAGE_TYPE_SHOOTING:
+                        {
+                            PlayerShoot(message);
+                            break;
+                        }
+                    default:
+                        {
+                            Debug.Log($"Project ({this}): message.Type)= {message.Type} Сценарий не предусмотрен");
                             break;
                         }
                 }
@@ -80,7 +93,6 @@ namespace FlyBattels
         private void OnConnectPlayerIO(Client client)
         {
             Debug.Log("Successfully connected to Player.IO");
-            _infomsg = "Successfully connected to Player.IO";
 
             //target.transform.Find("NameTag").GetComponent<TextMesh>().text = _userId;
             //target.transform.name = _userId;
@@ -105,23 +117,19 @@ namespace FlyBattels
         private void OnErrorConnectPlayerIO(PlayerIOError error)
         {
             Debug.Log("Error connecting: " + error.ToString());
-            _infomsg = error.ToString();
         }
 
         private void OnCorrectJoinRoom(Connection conn)
         {
             Debug.Log("Joined Room.");
-            _infomsg = "Joined Room.";
             // We successfully joined a room so set up the message handler
             _connection = conn;
             _connection.OnMessage += HandleMessage;
-            _isJoinedroom = true;
         }
 
         private void OnErrorJoinRoom(PlayerIOError error)
         {
             Debug.Log("Error Joining Room: " + error.ToString());
-            _infomsg = error.ToString();
         }
 
         private void HandleMessage(object sender, Message m)
